@@ -1,0 +1,46 @@
+<div class="drawer-wrapper @(_isOpen ? "slide" : "")">
+    <div class="drawer-mask"></div>
+    <div class="drawer">
+        @if (_activeCampaign is not null)
+        {
+            <div class="drawer-content">
+                <img src="@_activeCampaign.ImageUrl" />
+                <div class="campaign-details">
+                    <h3>@_activeCampaign.Title</h3>
+                    <h6 class="mb-3 text-muted"><span class="oi oi-map-marker"></span> @_activeCampaign.Name</h6>
+                    <div class="mt-4">
+                        <span>Created Time: @_activeCampaign.CreatedTime</span><br>
+                        <span>Goal: @_activeCampaign.Goal @_activeCampaign.Currency</span><br>
+                        <span>Current Fund: @_activeCampaign.Fund @_activeCampaign.Currency</span>
+                    </div>
+                    <p class="mt-4">@_activeCampaign.Description</p>
+                </div>
+            </div>
+            <div class="drawer-controls">
+                <button class="btn btn-secondary" @onclick="Close">Close</button>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private bool _isOpen;
+    private Campaign? _activeCampaign;
+
+    [Parameter, EditorRequired] public Campaign? Campaign { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (Campaign != null)
+        {
+            _activeCampaign = Campaign;
+            _isOpen = true;
+        }
+    }
+
+    private void Close()
+    {
+        _activeCampaign = null;
+        _isOpen = false;
+    }
+}

@@ -1,0 +1,24 @@
+<div class="card shadow" style="width: 18rem;">
+    <img src="@Campaign.ImageUrl" class="card-img-top" alt="@Campaign.Name">
+    <div class="card-body">
+        <h5 class="card-title">@Campaign.Title</h5>
+        <h6 class="card-subtitle mb-3 text-muted"><span class="oi oi-map-marker"></span> @Campaign.Name</h6>
+        <div class="d-flex justify-content-between mb-3">
+            <span>Created Time: @Campaign.CreatedTime</span><br>
+            <span>Goal: @Campaign.Goal @Campaign.Currency</span><br>
+            <span>Current Fund: @Campaign.Fund @Campaign.Currency</span>
+        </div>
+        <button class="btn btn-primary" title="View" @onclick="@(async () => await OnSelected.InvokeAsync(Campaign))">
+            <i class="bi bi-binoculars"></i>
+        </button>
+        <button class="btn btn-primary" title="Monitor" @onclick="@(async () => await OnMonitor.InvokeAsync(Campaign))">
+            <i class="bi bi-chevron-double-right"></i>
+        </button>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Campaign Campaign { get; set; } = default!;
+    [Parameter, EditorRequired] public EventCallback<Campaign> OnSelected { get; set; }
+    [Parameter, EditorRequired] public EventCallback<Campaign> OnMonitor { get; set; }
+}

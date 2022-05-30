@@ -1,0 +1,32 @@
+﻿@inject NavigationManager NavManager
+
+<div class="filters">
+    <label for="maxGoal">Max Goal</label>
+    <input id="maxGoal"
+           type="number"
+           class="form-control"
+           @bind="_maxGoal" />
+    <button class="btn btn-outline-primary"
+            @onclick="FilterSearchResults">
+        Filter
+    </button>
+    <button class="btn btn-outline-secondary"
+            @onclick="ClearSearchFilter">
+        Clear
+    </button>
+</div>
+
+@code {
+    private int _maxGoal;
+
+    [Parameter, EditorRequired] public string SearchTerm { get; set; } = default!;
+
+    private void FilterSearchResults() 
+        => NavManager.NavigateTo($"/search/{SearchTerm}/maxgoal/{_maxGoal}");
+
+    private void ClearSearchFilter()
+    {
+        _maxGoal = 0;
+        NavManager.NavigateTo($"/search/{SearchTerm}");
+    }
+}

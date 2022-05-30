@@ -1,0 +1,49 @@
+@page "/"
+@using pledgemanager.shared.Models 
+@inject NavigationManager NavManager
+@inject HttpClient Http
+
+<PageTitle>Featured Campaigns</PageTitle>
+
+@if (_campaigns == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <CampaignDrawer Campaign="_selectedCampaign" />
+
+    <CampaignSearch />
+    
+    <div class="grid">
+        @foreach (var campaign in _campaigns)
+        {
+            <CampaignCard Campaign="campaign" OnSelected="HandleCampaignSelected" OnMonitor="HandleCampaignMonitored" />
+        }
+    </div>
+}
+
+@code {
+    private List<Campaign>? _campaigns;
+    private Campaign? _selectedCampaign;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _campaigns = await Http.GetFromJsonAsync<List<Campaign>>("/api/campaigns") ?? new List<Campaign>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.ToString());
+        }
+    }
+
+    private void HandleCampaignSelected(Campaign campaign)
+        => _selectedCampaign = campaign;
+
+    private void HandleCampaignMonitored(Campaign campaign)
+    {
+        NavManager.NavigateTo($"/campaign/{campaign.Identifier}");
+    }
+}

@@ -1,0 +1,62 @@
+@page "/campaign/{Id}"
+@inject HttpClient Http
+
+<PageTitle>Campaign "@Id"</PageTitle>
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Campaign "@Id"</li>
+    </ol>
+</nav>
+
+@if (_selectedCampaign == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <span>Institution: @_selectedCampaign.Institution</span><br> 
+    <span>Title: @_selectedCampaign.Title</span><br> 
+    <span>Active? @_selectedCampaign.IsActive</span><br> 
+    <span>Current Fund: @_selectedCampaign.Fund @_selectedCampaign.Currency</span><br> 
+    <span>Goal: @_selectedCampaign.Goal @_selectedCampaign.Currency</span><br> 
+    <span>Total Pledges: @_selectedCampaign.PledgesCount</span><br> 
+    <span>Total Donors: @_selectedCampaign.DonorsCount</span><br> 
+
+    <h3 class="mt-5 mb-4">Latest Pledges</h3>
+
+    <div class="grid">
+        @foreach (var pledge in _selectedCampaign.Pledges)
+        {
+            <h4>@pledge.UserName - @pledge.Amount - @pledge.Currency</h4>
+        }
+    </div>
+
+    <h3 class="mt-5 mb-4">Latest Donors</h3>
+
+    <div class="grid">
+        @foreach (var donor in _selectedCampaign.Donors)
+        {
+            <h4>@donor.UserName - @donor.PercentageOfTotalFund - @donor.Amount</h4>
+        }
+    </div>
+}
+
+@code {
+    private Campaign? _selectedCampaign;
+ 
+    [Parameter] public string Id { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _selectedCampaign = await Http.GetFromJsonAsync<Campaign>($"/api/campaigns/{Id}") ?? new Campaign();
+        }
+        catch (HttpRequestException ex)
+        {
+            Console.WriteLine($"There was a problem loading campaign data: {ex.Message}");
+        }
+    }
+}
