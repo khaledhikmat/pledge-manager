@@ -113,7 +113,7 @@ public class EntitiesController : ControllerBase
             else 
             {
                 //TODO: Hard-coded for now
-                IReadOnlyList<BulkStateItem> mulitpleStateResult = await daprClient.GetBulkStateAsync(Constants.DAPR_STORE_NAME, new List<string> { "CAMP-00001" }, parallelism: 1);   
+                IReadOnlyList<BulkStateItem> mulitpleStateResult = await daprClient.GetBulkStateAsync(Constants.DAPR_STORE_NAME, new List<string> { "CAMP-00001", "CAMP-00002", "CAMP-00003", "CAMP-00004", "CAMP-00005", "CAMP-00006", "CAMP-00007", "CAMP-00008", "CAMP-00009", "CAMP-00010" }, parallelism: 1);   
                 List<BulkStateItem> items = new List<BulkStateItem>(mulitpleStateResult);
 
                 var serializationOptions = new JsonSerializerOptions();

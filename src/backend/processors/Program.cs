@@ -1,6 +1,11 @@
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container:
+//Register an HTTP client to use signalr REST APIs directly
+builder.Services.AddHttpClient("signalr");
+
+// Add services to the container.
+builder.Services.AddSingleton<SignalRAuthService>(_ => new SignalRAuthService("Endpoint=https://signalrservice"));
+builder.Services.AddSingleton<SignalRRestService>();
 
 builder.Services.AddControllers().AddDapr();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

@@ -1,12 +1,16 @@
 @page "/campaign/{Id}"
+@using System.Globalization
+@using Microsoft.AspNetCore.SignalR.Client
+@inject NavigationManager NavigationManager
 @inject HttpClient Http
+@implements IAsyncDisposable
 
-<PageTitle>Campaign "@Id"</PageTitle>
+<PageTitle>Campaign @Id</PageTitle>
 
 <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="/">Home</a></li>
-        <li class="breadcrumb-item active" aria-current="page">Campaign "@Id"</li>
+        <li class="breadcrumb-item active" aria-current="page">Campaign @Id</li>
     </ol>
 </nav>
 
@@ -16,35 +20,114 @@
 }
 else
 {
-    <span>Institution: @_selectedCampaign.Institution</span><br> 
-    <span>Title: @_selectedCampaign.Title</span><br> 
-    <span>Active? @_selectedCampaign.IsActive</span><br> 
-    <span>Current Fund: @_selectedCampaign.Fund @_selectedCampaign.Currency</span><br> 
-    <span>Goal: @_selectedCampaign.Goal @_selectedCampaign.Currency</span><br> 
-    <span>Total Pledges: @_selectedCampaign.PledgesCount</span><br> 
-    <span>Total Donors: @_selectedCampaign.DonorsCount</span><br> 
+    <div class="form-group">
+    <button @onclick="SwitchToPublicView" disabled="@(!IsUserView && !IsOrganizerView)">Public View</button>    
+    <button @onclick="SwitchToUserView" disabled="@(!IsPublicView && !IsOrganizerView)">User View</button>    
+    <button @onclick="SwitchToOrganizerView" disabled="@(!IsUserView && !IsPublicView)">Organizer View</button>    
+    </div>
+    <br>
 
-    <h3 class="mt-5 mb-4">Latest Pledges</h3>
-
-    <div class="grid">
-        @foreach (var pledge in _selectedCampaign.Pledges)
+<div class="row">
+    <div class="col-md-8">
+        <span>Institution: @_selectedCampaign.Institution</span><br> 
+        <span>Title: @_selectedCampaign.Title</span><br> 
+        <span>Active? @_selectedCampaign.IsActive</span><br> 
+        <span>Current Fund: @_selectedCampaign.Fund @_selectedCampaign.Currency</span><br> 
+        <span>Goal: @_selectedCampaign.Goal @_selectedCampaign.Currency</span><br> 
+        <span>Total Pledges: @_selectedCampaign.PledgesCount</span><br> 
+        <span>Total Donors: @_selectedCampaign.DonorsCount</span><br> 
+    </div>
+    <div class="col-md-4"> 
+        @if (this.IsPublicView)
         {
-            <h4>@pledge.UserName - @pledge.Amount - @pledge.Currency</h4>
+            <img src="images/campaign-qr.png"/>
         }
     </div>
+</div>
 
-    <h3 class="mt-5 mb-4">Latest Donors</h3>
-
-    <div class="grid">
-        @foreach (var donor in _selectedCampaign.Donors)
-        {
-            <h4>@donor.UserName - @donor.PercentageOfTotalFund - @donor.Amount</h4>
-        }
+    <div>
     </div>
+
+    @if (this.IsUserView)
+    {
+        <br>
+
+        <div class="form-group">
+            <label>
+                Donation Confirmation:
+                @donorConfirmation
+            </label>
+        </div>
+        <div class="form-group">
+            <label>
+                User:
+                <input @bind="donorName" />
+            </label>
+        </div>
+        <div class="form-group">
+            <label>
+                Message:
+                <input @bind="donorAmount" size="50" />
+            </label>
+        </div>
+        <button @onclick="Donate" disabled="@(!IsConnected || !_selectedCampaign.IsActive)">Donate</button>    
+    }
+
+    <h5 class="mt-5 mb-4">Latest @_selectedCampaign.LastItemsCount Pledges</h5>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width:70%">NAME</th>
+                <th style="width:15%">AMOUNT</th>
+                <th style="width:15%">% OF FUND</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var pledge in _selectedCampaign.Pledges)
+            {
+                <tr>
+                    <td>@pledge.UserName</td>
+                    <td>@pledge.Amount @pledge.Currency</td>
+                    <td>@pledge.PercentageOfTotalFund.ToString("P", CultureInfo.InvariantCulture)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <h5 class="mt-5 mb-4">Top @_selectedCampaign.LastItemsCount Donors</h5>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width:70%">NAME</th>
+                <th style="width:15%">AMOUNT</th>
+                <th style="width:15%">% OF FUND</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var donor in _selectedCampaign.Donors)
+            {
+                <tr>
+                    <td>@donor.UserName</td>
+                    <td>@donor.Amount @donor.Currency</td>
+                    <td>@donor.PercentageOfTotalFund.ToString("P", CultureInfo.InvariantCulture)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
 }
 
 @code {
-    private Campaign? _selectedCampaign;
+    private string donorName = "";
+    private double donorAmount = 0;
+    private string donorConfirmation = "";
+    private bool IsUserView = true;
+    private bool IsPublicView = false;
+    private bool IsOrganizerView = false;
+    private Campaign _selectedCampaign = new Campaign();
+    private HubConnection? _hubConnection;
+    private List<SimpleMessage> simpleMessages = new List<SimpleMessage>(); 
  
     [Parameter] public string Id { get; set; } = default!;
 
@@ -52,11 +135,84 @@ else
     {
         try
         {
-            _selectedCampaign = await Http.GetFromJsonAsync<Campaign>($"/api/campaigns/{Id}") ?? new Campaign();
+            _selectedCampaign = await Http.GetFromJsonAsync<Campaign>($"function/campaigns/{Id}") ?? new Campaign();
+
+            _hubConnection = new HubConnectionBuilder()
+                .WithUrl(NavigationManager.ToAbsoluteUri("/campaignhub"))
+                .Build();
+
+            _hubConnection.On<Campaign>("UpdateCampaign", (c) =>
+            {
+                //TODO: Ignore the ones that don't belong to me!!!
+                if (c.Identifier == _selectedCampaign.Identifier)
+                {
+                    _selectedCampaign = c;
+                    StateHasChanged();
+                }
+            });
+
+            await _hubConnection.StartAsync();
         }
         catch (HttpRequestException ex)
         {
             Console.WriteLine($"There was a problem loading campaign data: {ex.Message}");
         }
+    }
+
+    private async Task Donate()
+    {
+        try
+        {
+            this.donorConfirmation = "";
+            var pledge = new Pledge();
+            pledge.CampaignIdentifier = _selectedCampaign.Identifier;
+            pledge.Amount = donorAmount;
+            pledge.UserName = donorName;
+            var response = await Http.PostAsJsonAsync<Pledge>($"function/campaigns/{_selectedCampaign.Identifier}/pledges", pledge);
+            if (!response.IsSuccessStatusCode) 
+            {
+                throw new ApplicationException($"{response.StatusCode}-{response.ReasonPhrase}");
+            }
+
+            this.donorConfirmation = await response.Content.ReadAsStringAsync();
+            this.donorAmount = 0;
+            this.donorName = "";
+        }
+        catch (HttpRequestException ex)
+        {
+            Console.WriteLine($"There was a problem donating: {ex.Message}");
+        }
+    }
+
+    public bool IsConnected =>
+        _hubConnection?.State == HubConnectionState.Connected;
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.DisposeAsync();
+        }
+    }
+
+    private void SwitchToPublicView()
+    {
+        this.IsUserView = false;
+        this.IsPublicView = true;
+        this.IsOrganizerView = false;
+    }
+
+    private void SwitchToOrganizerView()
+    {
+        this.IsUserView = false;
+        this.IsPublicView = false;
+        this.IsOrganizerView = true;
+    }
+
+    private void SwitchToUserView()
+    {
+        this.IsUserView = true;
+        this.IsPublicView = false;
+        this.IsOrganizerView = false;
     }
 }

@@ -6,6 +6,9 @@ using System.Collections.Generic;
 using System;
 
 using pledgemanager.shared.Models;
+using System.Text;
+using Newtonsoft.Json;
+using System.Net.Http.Headers;
 
 namespace pledgemanager.frontend.api.Services
 {
@@ -68,6 +71,21 @@ namespace pledgemanager.frontend.api.Services
             }
 
             return campaign;
+        }
+
+        public async Task<string> PostPledge(string campaignId, Pledge pledge)
+        {
+            var requestUri = $"/entities/campaigns/{campaignId}/pledges";
+            var request = new HttpRequestMessage(HttpMethod.Post, requestUri);
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            request.Content = new StringContent(JsonConvert.SerializeObject(pledge), Encoding.UTF8, "application/json");
+            var response = await _http.SendAsync(request);
+            if (!response.IsSuccessStatusCode) 
+            {
+                throw new ApplicationException($"{response.StatusCode}-{response.ReasonPhrase}");
+            }
+
+            return Guid.NewGuid().ToString();//await response.Content.ReadFromJsonAsync<string>();
         }
     }
 }

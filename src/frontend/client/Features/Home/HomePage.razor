@@ -31,7 +31,7 @@ else
     {
         try
         {
-            _campaigns = await Http.GetFromJsonAsync<List<Campaign>>("/api/campaigns") ?? new List<Campaign>();
+            _campaigns = await Http.GetFromJsonAsync<List<Campaign>>("/function/campaigns") ?? new List<Campaign>();
         }
         catch (Exception ex)
         {
