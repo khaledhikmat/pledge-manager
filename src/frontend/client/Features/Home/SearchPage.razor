@@ -46,7 +46,7 @@ else
     {
         try
         {
-            var allCampaigns = await Http.GetFromJsonAsync<List<Campaign>>("/api/campaigns") ?? new List<Campaign>();
+            var allCampaigns = await Http.GetFromJsonAsync<List<Campaign>>("/function/campaigns") ?? new List<Campaign>();
             _searchResults = allCampaigns!.Where(x => x.Title.Contains(SearchTerm, StringComparison.CurrentCultureIgnoreCase)
                                             || x.Description.Contains(SearchTerm, StringComparison.CurrentCultureIgnoreCase));
             _cachedSearchResults = _searchResults;

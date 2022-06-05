@@ -1,24 +1,56 @@
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.DependencyInjection;
-
+using Microsoft.AspNetCore.ResponseCompression;
+using pledgemanager.frontend.api.Hubs;
 using pledgemanager.frontend.api.Services;
 
-namespace pledgemanager.frontend.api
+var builder = WebApplication.CreateBuilder(args);
+
+//Register an HTTP client to access signalr REST APIs directly
+builder.Services.AddHttpClient("signalr");
+
+//Register an HTTP client to access the backend APIs directly
+builder.Services.AddHttpClient("backend");
+
+// Add services to the container.
+builder.Services.AddSingleton<SignalRAuthService>(_ => new SignalRAuthService("Endpoint=https://pledges.service.signalr.net;AccessKey=HkY4QnEGMOUumFoK/h6yNJs1gy6ko1jlXXDXZp4fgd8=;Version=1.0;"));
+builder.Services.AddSingleton<SignalRRestService>();
+builder.Services.AddSingleton<ISettingService, SettingService>();
+builder.Services.AddSingleton<IEntitiesService, EntitiesService>();
+
+builder.Services.AddSignalR().AddAzureSignalR();
+builder.Services.AddControllersWithViews();
+builder.Services.AddRazorPages();
+builder.Services.AddResponseCompression(opts =>
 {
-    public class Program
-    {
-        public static void Main()
-        {
-            var host = new HostBuilder()
-            .ConfigureFunctionsWorkerDefaults()
-            .ConfigureServices(s =>
-            {
-                s.AddHttpClient();
-                s.AddSingleton<ISettingService, SettingService>();
-                s.AddSingleton<IEntitiesService, EntitiesService>();
-            })
-            .Build();
-            host.Run();
-        }
-    }
+    opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
+        new[] { "application/octet-stream" });
+});
+
+var app = builder.Build();
+app.UseResponseCompression();
+
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
+{
+    app.UseWebAssemblyDebugging();
 }
+else
+{
+    app.UseExceptionHandler("/Error");
+    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+    app.UseHsts();
+}
+
+app.UseHttpsRedirection();
+
+app.UseBlazorFrameworkFiles();
+app.UseStaticFiles();
+
+app.UseRouting();
+
+app.MapRazorPages();
+app.MapControllers();
+app.MapHub<ChatHub>("/chathub");
+app.MapHub<CampaignHub>("/campaignhub");
+app.MapFallbackToFile("index.html");
+
+app.Run();

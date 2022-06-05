@@ -32,10 +32,12 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
     private const int EXTERNALIZE_TIMER_PERIODIC = 10;
  
     private DaprClient _daprClient;
+    private SignalRRestService _signalRService;
 
-    public CampaignActor(ActorHost host, DaprClient daprClient) : base(host)
+    public CampaignActor(ActorHost host, DaprClient daprClient, SignalRRestService signalRService) : base(host)
     {
         _daprClient = daprClient;
+        _signalRService = signalRService; 
     }
 
     protected override async Task OnActivateAsync()
@@ -133,7 +135,7 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
             campaign.Fund += pledge.Amount;
             pledge.Currency = campaign.Currency; 
             pledge.ExchangeRate = campaign.ExchangeRate; // Lock the exg rate
-            pledge.PercentageOfTotalFund = campaign.Fund > 0 ? ((pledge.Amount / campaign.Fund) * 100) : 0;
+            pledge.PercentageOfTotalFund = campaign.Fund > 0 ? (pledge.Amount / campaign.Fund) : 0;
         }
         else 
         {
@@ -141,6 +143,8 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
         }
 
         pledges.Add(pledge);
+        pledges = pledges.Select(p => {p.PercentageOfTotalFund = p.Amount / campaign.Fund; return p;}).ToList();
+        
         campaign.Pledges = pledges.OrderByDescending(d => d.PledgeTime).Take(campaign.LastItemsCount).ToList(); 
         campaign.PledgesCount = pledges.Count();
         campaign.DonorsCount = pledges.Select(d => d.UserName).Distinct().Count();
@@ -161,9 +165,10 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
             donor.Amount += pledge.Amount;
             donor.Currency = campaign.Currency; 
             donor.ExchangeRate = campaign.ExchangeRate; // Lock the exg rate
-            donor.PercentageOfTotalFund = campaign.Fund > 0 ? ((donor.Amount / campaign.Fund) * 100) : 0;
+            donor.PercentageOfTotalFund = campaign.Fund > 0 ? (donor.Amount / campaign.Fund) : 0;
         }
 
+        donors = donors.Select(d => {d.PercentageOfTotalFund = d.Amount / campaign.Fund; return d;}).ToList();
         campaign.Donors = donors.OrderByDescending(d => d.Amount).Take(campaign.LastItemsCount).ToList(); 
 
         await this.SaveCampaignState(campaign);
@@ -354,8 +359,13 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
     private async Task SaveCampaignState(Campaign campaign) 
     {
         await this.StateManager.SetStateAsync(CAMPAIGN_STATE_NAME, campaign);
+
         //TODO: Externalize campaign to SignalR to allow for real-time updates
         Logger.LogInformation($"CampaignActor - Externalize campaign [{this.Id.ToString()}] to SignalR for real-time updates....");
+        var payload = new PayloadMessage();
+        payload.Target = "UpdateCampaign";
+        payload.Arguments = new[] { campaign };
+        await _signalRService.CallViaRest("CampaignHub", payload);    
     }
 
     private async Task<List<Pledge>> GetPledgesState() 
