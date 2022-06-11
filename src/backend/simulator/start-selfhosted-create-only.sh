@@ -1,1 +1,1 @@
-dapr run --app-id=pledgemanagersimulator dotnet run create no-simulate
+dapr run --app-id=pledgemanager-simulator dotnet run create ignore
