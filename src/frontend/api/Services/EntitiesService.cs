@@ -80,12 +80,19 @@ namespace pledgemanager.frontend.api.Services
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             request.Content = new StringContent(JsonConvert.SerializeObject(pledge), Encoding.UTF8, "application/json");
             var response = await _http.SendAsync(request);
+
+            if (response == null) 
+            {
+                throw new ApplicationException($"Null response from API Endpoint!");
+            }
+
             if (!response.IsSuccessStatusCode) 
             {
                 throw new ApplicationException($"{response.StatusCode}-{response.ReasonPhrase}");
             }
 
-            return Guid.NewGuid().ToString();//await response.Content.ReadFromJsonAsync<string>();
+            //return Guid.NewGuid().ToString();
+            return await response.Content.ReadFromJsonAsync<string>();
         }
     }
 }

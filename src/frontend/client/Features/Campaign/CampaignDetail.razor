@@ -21,6 +21,9 @@
 else
 {
     <div class="form-group">
+    <RadzenButton Click="@SwitchToPublicView" Disabled="@(!IsUserView && !IsOrganizerView)" Text="Public View"></RadzenButton>
+    <RadzenButton Click="@SwitchToUserView" Disabled="@(!IsPublicView && !IsOrganizerView)" Text="User View"></RadzenButton>
+    <RadzenButton Click="@SwitchToOrganizerView" Disabled="@(!IsUserView && !IsPublicView)" Text="Organizer View"></RadzenButton>
     <button @onclick="SwitchToPublicView" disabled="@(!IsUserView && !IsOrganizerView)">Public View</button>    
     <button @onclick="SwitchToUserView" disabled="@(!IsPublicView && !IsOrganizerView)">User View</button>    
     <button @onclick="SwitchToOrganizerView" disabled="@(!IsUserView && !IsPublicView)">Organizer View</button>    
@@ -70,6 +73,7 @@ else
                 <input @bind="donorAmount" size="50" />
             </label>
         </div>
+        <RadzenButton Click="@Donate" Disabled="@(!IsConnected || !_selectedCampaign.IsActive)" Text="Donate" ButtonStyle="ButtonStyle.Primary"></RadzenButton>
         <button @onclick="Donate" disabled="@(!IsConnected || !_selectedCampaign.IsActive)">Donate</button>    
     }
 
@@ -85,6 +89,72 @@ else
         </thead>
         <tbody>
             @foreach (var pledge in _selectedCampaign.Pledges)
+            {
+                <tr>
+                    <td>@pledge.UserName</td>
+                    <td>@pledge.Amount @pledge.Currency</td>
+                    <td>@pledge.PercentageOfTotalFund.ToString("P", CultureInfo.InvariantCulture)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <h5 class="mt-5 mb-4">Latest @_selectedCampaign.LastItemsCount Pending Approval Pledges</h5>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width:70%">NAME</th>
+                <th style="width:15%">AMOUNT</th>
+                <th style="width:15%">% OF FUND</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var pledge in _selectedCampaign.PendingApprovalPledges)
+            {
+                <tr>
+                    <td>@pledge.UserName</td>
+                    <td>@pledge.Amount @pledge.Currency</td>
+                    <td>@pledge.PercentageOfTotalFund.ToString("P", CultureInfo.InvariantCulture)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <h5 class="mt-5 mb-4">Latest @_selectedCampaign.LastItemsCount Rejected Pledges</h5>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width:70%">NAME</th>
+                <th style="width:15%">AMOUNT</th>
+                <th style="width:15%">% OF FUND</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var pledge in _selectedCampaign.RejectedPledges)
+            {
+                <tr>
+                    <td>@pledge.UserName</td>
+                    <td>@pledge.Amount @pledge.Currency</td>
+                    <td>@pledge.PercentageOfTotalFund.ToString("P", CultureInfo.InvariantCulture)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <h5 class="mt-5 mb-4">Latest @_selectedCampaign.LastItemsCount Errored Pledges</h5>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width:70%">NAME</th>
+                <th style="width:15%">AMOUNT</th>
+                <th style="width:15%">% OF FUND</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var pledge in _selectedCampaign.ErroredPledges)
             {
                 <tr>
                     <td>@pledge.UserName</td>
@@ -112,6 +182,28 @@ else
                     <td>@donor.UserName</td>
                     <td>@donor.Amount @donor.Currency</td>
                     <td>@donor.PercentageOfTotalFund.ToString("P", CultureInfo.InvariantCulture)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <h5 class="mt-5 mb-4">Top @_selectedCampaign.LastItemsCount Matches</h5>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width:70%">NAME</th>
+                <th style="width:15%">AMOUNT</th>
+                <th style="width:15%">NOTE</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var match in _selectedCampaign.Matches)
+            {
+                <tr>
+                    <td>@match.UserName</td>
+                    <td>@match.Amount @_selectedCampaign.Currency</td>
+                    <td>@match.Note</td>
                 </tr>
             }
         </tbody>

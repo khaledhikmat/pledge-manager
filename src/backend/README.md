@@ -25,8 +25,8 @@ cd src
 
 ```
 dotnet new classlib -o shared
-dotnet new webapi -o processors
-dotnet new webapi -o api
+dotnet new webapi -o campaigns
+dotnet new webapi -o users
 dotnet new console -o simulator
 ```
 
@@ -39,16 +39,17 @@ dotnet add package Dapr.Actors.AspNetCore
 ```
 
 ```
-dotnet add processors/processors.csproj reference shared/shared.csproj
-dotnet add api/api.csproj reference shared/shared.csproj
+dotnet add campaigns/campaigns.csproj reference ../shared/shared.csproj
+dotnet add users/users.csproj reference ../shared/shared.csproj
+dotnet add simulator/simulator.csproj reference ../shared/shared.csproj
 ```
 
 ## Services
 
 | Microservice | Application Port | Dapr sidecar HTTP port | Dapr sidecar gRPC port |
 | --- | --- | --- | --- |
-| processors | 6000 | 3600 | 60000 |
-| api | 6001 | 3601 | 60001 |
+| campaigns | 6000 | 3600 | 60000 |
+| users | 6001 | 3601 | 60001 |
 
 ## Dashboard
 
@@ -89,17 +90,17 @@ docker exec -it k8s_redis_redis-75db659ddc-q6jfn_dapr-storemanager_b116ad62-7b4e
 
 ## Run Locally
 
-*Start Processors:*
+*Start Campaigns:*
 
 ```bash
-cd processors
+cd campaigns
 bash ./start-selfhosted.sh
 ```
 
-*Start API:*
+*Start Users:*
 
 ```bash
-cd api
+cd users
 bash ./start-selfhosted.sh
 ```
 
@@ -114,8 +115,8 @@ curl -X POST http://localhost:3601/v1.0-alpha1/state/statestore/query?metadata.c
 Docker files have to be at the root because they need to include the shared library.
 
 ```bash
-docker image build -t pledge-manager/processors:1.0 . -f Dockerfile-processors
-docker container run -it  -p 6000:6000 pledge-manager/processors:1.0
+docker image build -t pledge-manager/campaigns:1.0 . -f Dockerfile-campaigns
+docker container run -it  -p 6000:6000 pledge-manager/campaigns:1.0
 docker inspect <container-id>
 ```
 
@@ -124,7 +125,7 @@ Make sure the ASP.Net core project run using `0.0.0.0` as opposed to `localhost`
 You can also get into the Docker container:
 
 ```
-docker run  -it pledge-manager/processors:1.0 /bin/bash
+docker run  -it pledge-manager/campaigns:1.0 /bin/bash
 ```
 
 To push to Docker hub:

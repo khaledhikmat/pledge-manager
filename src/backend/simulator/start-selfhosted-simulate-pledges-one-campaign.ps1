@@ -1,3 +1,3 @@
 dapr run `
     --app-id pledgemanager-simulator `
-    dotnet run create ignore
+    dotnet run simulatepledges 100 CAMP-00001

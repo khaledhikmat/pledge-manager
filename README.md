@@ -77,21 +77,30 @@ HGET statestore||CAMP-00001 data
 
 ### Backend
 
-*Using a terminal session, start the backend processors*
+*Using a terminal session, start the backend campaigns*
 
 ```
-cd src/backend/processors
+cd src/backend/campaigns
 bash ./start-selfhosted.sh
 ```
 
-*Using a terminal session, start the backend api*
+*Using a terminal session, start the backend users*
 
 ```
-cd src/backend/api
+cd src/backend/users
 bash ./start-selfhosted.sh
 ```
 
-*Using Postman, Seed the database*
+*Using a terminal session, start the simulator to seed the database*
+
+```
+cd src/backend/simulator
+bash ./start-selfhosted-create-only.sh
+bash ./start-selfhosted-simulate-donors.sh
+bash ./start-selfhosted-simulate-pledges-one-campaign.sh
+```
+
+*Using Postman, issue different commands as needed*
 
 Use the [Postman collection](./src/backend/postman/pledge-manager-collection.json):
 - Create an institution
@@ -100,12 +109,31 @@ Use the [Postman collection](./src/backend/postman/pledge-manager-collection.jso
 
 ### Frontend
 
-*Using a terminal session, start the frontend client and api using SWA*
+*Using a terminal session, start the frontend API*
 
 ```
-cd src/frontend
-- swa start http://localhost:5000 --run "dotnet run --project client/client.csproj" --api-location api
+cd src/frontend/api
+- dotnet run
 ```
 
-*Using a browser, access the frontend in SWA Emulator*
-[http://localhost:4280](http://localhost:4280)
+*Using a browser, access the frontend in a browser*
+[https://localhost:5000](https://localhost:5000)
+
+## Test Scenarios
+
+**This assumes that seeding the database is seeded as above**
+
+- Test pledges against `CAMP-00001` which is configured for auto approval mode.
+- Test pledges against `CAMP-00002` which is configured for manual approval.
+- Test pledges against `CAMP-00003` which is configured for hybrid.
+- Test pledges against `CAMP-00004` which is configured for hybrid.
+- Test restricted amounts.
+- Test min/max amounts.
+- Test anonymous auto approval.
+- Test match.
+- Test pledge approval.
+- Test pledge rejection.
+- Test auto-deactivation.
+- Test campaign update inlcuding behavior.
+
+

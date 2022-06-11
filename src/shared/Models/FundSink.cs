@@ -15,3 +15,14 @@ public class FundSink
     public int PledgesCount { get; set; } = 0;
     public int DonorsCount { get; set; } = 0;
 }
+
+public enum FundSinkTypes
+{
+    Unknown,
+    Campain,
+    Institution,
+    City,
+    State,
+    Country,
+    Global
+}

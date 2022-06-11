@@ -1,9 +1,27 @@
 ﻿using Dapr.Client;
 using pledgemanager.shared.Models;
+using pledgemanager.shared.Utils;
+
+if (Environment.GetCommandLineArgs().Length < 3)
+{
+    throw new Exception($"Program requires at least 2 args - CMD ARG1 and optional ARG2");
+}
+
+string command = Environment.GetCommandLineArgs()[1];
+string arg1 = Environment.GetCommandLineArgs()[2];
+string arg2 = "";
+if (Environment.GetCommandLineArgs().Length > 3)
+{
+    arg2 = Environment.GetCommandLineArgs()[3];
+}
+
+if (string.IsNullOrEmpty(command) || string.IsNullOrEmpty(arg1))
+{
+    throw new Exception($"Program requires at least CMD and ARG1 be provided!");
+}
 
 var daprClient = new DaprClientBuilder().Build();
 
-int pledges = 100;
 List<Institution> institutions = new List<Institution> {
     new Institution() {
         Identifier = "INST-00001", 
@@ -31,6 +49,31 @@ List<Institution> institutions = new List<Institution> {
     }
 };
 
+List<User> users = new List<User> {
+    new User() {
+        Identifier = "USER-00001", 
+        Type = UserTypes.Organizer, 
+        VerificationMethod = UserVerificationMethods.Sms, 
+        InstitutionIdentifier = "INST-00001", 
+        UserName = "org1", 
+        Name = "org1",
+        NickName = "org1",
+        Phone = "2105551212",
+        Email = "org1@sat.com"
+    },
+    new User() {
+        Identifier = "USER-00002", 
+        Type = UserTypes.Organizer, 
+        VerificationMethod = UserVerificationMethods.Sms, 
+        InstitutionIdentifier = "INST-00002", 
+        UserName = "org2", 
+        Name = "org2",
+        NickName = "org2",
+        Phone = "2105551313",
+        Email = "org2@sat.com"
+    }
+};
+
 List<Campaign> campaigns = new List<Campaign> {
     new Campaign() {
         Identifier = "CAMP-00001", 
@@ -45,7 +88,15 @@ List<Campaign> campaigns = new List<Campaign> {
         Start = DateTime.Now.AddDays(-10),
         Stop = DateTime.Now.AddDays(10),
         IsActive = true,
-        Goal = 10000
+        Goal = 50000,
+        Behavior = new CampaignBehavior() {
+            CampaignIdentifier = "CAMP-00001",
+            PledgeMode = CampaignPledgeModes.AutoApproval,
+            RestrictedPledgeAmounts = new List<double> {
+            },
+            AutoDeactivateWhenGoalReached = true,
+            MatchSupported = false
+        }
     },
     new Campaign() {
         Identifier = "CAMP-00002", 
@@ -60,7 +111,16 @@ List<Campaign> campaigns = new List<Campaign> {
         Start = DateTime.Now.AddDays(-10),
         Stop = DateTime.Now.AddDays(10),
         IsActive = true,
-        Goal = 20000
+        Goal = 20000,
+        Behavior = new CampaignBehavior() {
+            CampaignIdentifier = "CAMP-00002",
+            PledgeMode = CampaignPledgeModes.ManualApproval,
+            RestrictedPledgeAmounts = new List<double> {
+                100,250,500,1000
+            },
+            AutoDeactivateWhenGoalReached = false,
+            MatchSupported = false
+        }
     },
     new Campaign() {
         Identifier = "CAMP-00003", 
@@ -75,7 +135,15 @@ List<Campaign> campaigns = new List<Campaign> {
         Start = DateTime.Now.AddDays(-10),
         Stop = DateTime.Now.AddDays(10),
         IsActive = true,
-        Goal = 20000
+        Goal = 30000,
+        Behavior = new CampaignBehavior() {
+            CampaignIdentifier = "CAMP-00003",
+            PledgeMode = CampaignPledgeModes.HybridApproval,
+            AutoApprovePledgeIfAmountLE = 500,
+            AutoApprovePledgeIfAnonymous = true,
+            AutoDeactivateWhenGoalReached = true,
+            MatchSupported = true
+        }
     },
     new Campaign() {
         Identifier = "CAMP-00004", 
@@ -90,62 +158,145 @@ List<Campaign> campaigns = new List<Campaign> {
         Start = DateTime.Now.AddDays(-10),
         Stop = DateTime.Now.AddDays(10),
         IsActive = true,
-        Goal = 20000
+        Goal = 40000,
+        Behavior = new CampaignBehavior() {
+            CampaignIdentifier = "CAMP-00004",
+            PledgeMode = CampaignPledgeModes.HybridApproval,
+            AutoApprovePledgeIfAmountLE = 500,
+            AutoApprovePledgeIfAnonymous = true,
+            AutoDeactivateWhenGoalReached = true,
+            MatchSupported = true
+        }
     }
 };
 
-List<string> users = new List<string> {
-    "Abou Ya3goob",
-    "Abou Mazen",
-    "Sarraj Hasan",
-    "Ahmad Dakkaq",
-    "Soliman Mohammad",
-    "Sameer Fattal",
-    "Jamal Kurk",
-    "Sameh Jabal",
-    "Mo3een Lotfi",
-    "Adam Aboudan",
-    "Ryadh Idlbi",
-    "Ameer Barakat",
-    "Jumaa Rahhal",
-    "Shoaib Kabeer",
-    "Ruth McCormick",
-    "Abou Jandal",
-    "John McPherson",
-    "Brandon Perkins"
+List<Donor> donors = new List<Donor> {
+    new Donor() {
+        UserName = "2105551200", 
+        Name = "Abou Ya3goob"
+    },
+    new Donor() {
+        UserName = "2105551201", 
+        Name = "Abou Mazen"
+    },
+    new Donor() {
+        UserName = "2105551202", 
+        Name = "Sarraj Hasan"
+    },
+    new Donor() {
+        UserName = "2105551203", 
+        Name = "Ahmad Dakkaq"
+    },
+    new Donor() {
+        UserName = "2105551204", 
+        Name = "Soliman Mohammad"
+    },
+    new Donor() {
+        UserName = "2105551205", 
+        Name = "Sameer Fattal"
+    },
+    new Donor() {
+        UserName = "2105551206", 
+        Name = "Jamal Kurk"
+    },
+    new Donor() {
+        UserName = "2105551207", 
+        Name = "Sameh Jabal"
+    },
+    new Donor() {
+        UserName = "2105551208", 
+        Name = "Mo3een Lotfi"
+    },
+    new Donor() {
+        UserName = "2105551209", 
+        Name = "Adam Aboudan"
+    },
+    new Donor() {
+        UserName = "2105551210", 
+        Name = "Ryadh Idlbi"
+    },
+    new Donor() {
+        UserName = "2105551211", 
+        Name = "Ameer Barakat"
+    },
+    new Donor() {
+        UserName = "2105551212", 
+        Name = "Jumaa Rahhal"
+    },
+    new Donor() {
+        UserName = "2105551213", 
+        Name = "Shoaib Kabeer"
+    },
+    new Donor() {
+        UserName = "2105551214", 
+        Name = "Ruth McCormick"
+    },
+    new Donor() {
+        UserName = "2105551214", 
+        Name = "Abou Jandal"
+    },
+    new Donor() {
+        UserName = "2105551215", 
+        Name = "John McPherson"
+    },
+    new Donor() {
+        UserName = "2105551216", 
+        Name = "Brandon Perkins"
+    }
 };
 
-string createCommand = Environment.GetCommandLineArgs()[1];
-if (createCommand == "create")
+if (command == "create")
 {
     Console.WriteLine("Creating institutions....");
     foreach (Institution institution in institutions)
     {
-        await daprClient.InvokeMethodAsync<Institution>("pledgemanagerapi", $"entities/institutions", institution);    
+        await daprClient.InvokeMethodAsync<Institution>("pledgemanager-campaigns", $"entities/institutions", institution);    
+    }
+
+    Console.WriteLine("Creating users....");
+    foreach (User user in users)
+    {
+        await daprClient.InvokeMethodAsync<User>("pledgemanager-users", $"users", user);    
     }
 
     Console.WriteLine("Creating campaigns....");
     foreach (Campaign campaign in campaigns)
     {
-        await daprClient.InvokeMethodAsync<Campaign>("pledgemanagerapi", $"entities/campaigns", campaign);    
+        await daprClient.InvokeMethodAsync<Campaign>("pledgemanager-campaigns", $"entities/campaigns", campaign);    
     }
 }
-
-string simulateCommand = Environment.GetCommandLineArgs()[2];
-if (simulateCommand == "simulate")
+else if (command == "simulatedonors")
 {
-    Console.WriteLine($"Simulating {pledges} pledges....");
-    string simulatedCampaignId = "";
-    if (Environment.GetCommandLineArgs().Length > 3)
+    var code = arg1; // Read from the command line
+    Console.WriteLine($"Simulating {donors.Count} donors using {code} code....");
+    foreach(Donor donor in donors)
     {
-        simulatedCampaignId = Environment.GetCommandLineArgs()[3];
+        try
+        {
+            Console.WriteLine($"Simulating {donor.UserName} ....");
+            // Generate a verification request
+            await daprClient.InvokeMethodAsync("pledgemanager-users", $"users/verifications/{donor.UserName}");    
+            // Respond with code (for now temp)
+            await daprClient.InvokeMethodAsync("pledgemanager-users", $"users/verifications/{donor.UserName}/{code}");    
+        }
+        catch (Exception e)
+        {
+            /* Ignore */
+            Console.WriteLine($"Donor verification error: {e.Message}");
+        }
     }
+}
+else if (command == "simulatepledges")
+{
+    var pledges = int.Parse(arg1);
+    Console.WriteLine($"Simulating {pledges} pledges....");
+    string simulatedCampaignId = arg2;
 
     while (pledges > 0)
     {
         Campaign campaign = new Campaign();
 
-        if (string.IsNullOrEmpty(simulateCommand))
+        if (string.IsNullOrEmpty(simulatedCampaignId))
         {
             campaign = campaigns[Random.Shared.Next(campaigns.Count)];
         }
@@ -165,10 +316,10 @@ if (simulateCommand == "simulate")
 
             var pledge = new Pledge();
             pledge.CampaignIdentifier = campaign.Identifier;
-            pledge.Amount = Random.Shared.Next(50, 5000);
+            pledge.Amount = Random.Shared.Next(100, 5000);
             pledge.Currency = "USD";
-            pledge.UserName = users[Random.Shared.Next(users.Count)];
-            await daprClient.InvokeMethodAsync<Pledge>("pledgemanagerapi", $"entities/campaigns/{campaign.Identifier}/pledges", pledge);    
+            pledge.UserName = donors[Random.Shared.Next(donors.Count)].UserName;
+            await daprClient.InvokeMethodAsync<Pledge>("pledgemanager-campaigns", $"entities/campaigns/{campaign.Identifier}/pledges", pledge);    
         }
         catch (Exception e) 
         {
