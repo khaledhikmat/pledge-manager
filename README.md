@@ -20,26 +20,28 @@ TBA
 
 ## Microservices
 
-The following are proposed microservices:
-- Frontend (hosted in Azure Static Web Apps):
-    - Blazor Web Assesmbly (SPA)
-    - AZ Functions as APIs to handle/circumvent CORS
-- Backend (hosted in Azure Container Apps):
-    - Backend API (ACA App1) 
+The following are proposed microservices hosted in Azure Container Apps:
+- pledgemanager-frontend:
+    - Blazor Web Assesmbly (SPA) Client
+    - API Endpoints as Server to handle/circumvent CORS
+- pledgemanager-camapigns:
+    - Entities Controller
+    - Processors Controller
+    - Campaign Actors 
     - 3 Pub/Sub: Campaigns, Commands, Pledges (Redis)
-    - Processors (ACA App2)
-    - Campaign Actors (ACA App2)
-    - 1 Pub/Sub: Externalizations (Redis)
-    - Externalization State Update Processor (ACA App3)
-    - Externalization gRPC Processor (ACA App3)
-    - Externalization Redis Streams Processor (ACA App3)
+- users-camapigns:
+    - Users Controller
+    - User Actors 
+
+**Please note** that we considered Azure Static Web Apps (SWA) to host the frontend but there were some friction with SignalR. Since our frontend relies heavily on SignalR, we opted to go with a non-SWA site. The net effect is that the frontend (client and API) will scale together in Azure Container Apps as opposed to scaling independently had they been running in SWA.
 
 ## Azure Services
 
+### MVP:
+
 - SignalR: Real-time updates to Blazor App clients
 - Redis: State Store and Pub/Sub
-- Azure Container Apps: hosts all backend containers
-- Azure Static Web Apps: hosts the front-end application
+- Azure Container Apps: hosts all containers
 
 ## Run Locally
 
@@ -47,7 +49,6 @@ The following are proposed microservices:
 
 - [Docker](https://docs.docker.com/get-docker/)
 - [DAPR](https://docs.dapr.io/getting-started/)
-- [SWA CLI](https://github.com/Azure/static-web-apps-cli) (Static Web Apps)
 
 ### Redis
 

@@ -1,0 +1,50 @@
+@inject HttpClient _httpClient
+@inject ILocalStorageService _locaStorage
+
+<h1>Donor Registration</h1>
+
+@if (_showSuccess)
+{
+    <blockquote>
+        <strong>Registration is successful!</strong>
+    </blockquote>
+}
+
+<div class="form-group">
+    <label>
+        PHONE:
+        <input @bind="_userName" />
+    </label>
+</div>
+<div class="form-group">
+    <label>
+        FIRST NAME:
+        <input @bind="_firstName" />
+    </label>
+</div>
+<div class="form-group">
+    <label>
+        LAST NAME:
+        <input @bind="_lastName" />
+    </label>
+</div>
+<button @onclick="Register" >Register</button>    
+
+@code {
+    bool _showSuccess = false;
+    private string _userName = "";
+    private string _firstName = "";
+    private string _lastName = "";
+
+    private async Task Register()
+    {
+        try
+        {
+            await _locaStorage.SetItemAsync("token", "pledge-manager");
+        }
+        catch (HttpRequestException ex)
+        {
+            Console.WriteLine($"There was a problem donating: {ex.Message}");
+        }
+    }
+}

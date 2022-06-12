@@ -66,7 +66,6 @@ public class FunctionController : ControllerBase
         }
     }
 
-
     [Route("campaigns/{id}/pledges")]
     [HttpPost()]
     public async Task<ActionResult> PledgeCampaign(string id, [FromBody] Pledge pledge)
@@ -82,6 +81,37 @@ public class FunctionController : ControllerBase
         }
     }
 
+    [Route("campaigns/{id}/commands")]
+    [HttpPost()]
+    public async Task<ActionResult> CommandCampaign(string id, [FromBody] CampaignCommand command)
+    {
+        try
+        {
+            return Ok(await _entitiesService.CommandCampaign(id, command));
+        }
+        catch (Exception e)
+        {
+            _logger.LogError($"CommandCampaign - Exception: " + e.Message);
+            return StatusCode(500);
+        }
+    }
+
+    [Route("campaigns/{id}/updates")]
+    [HttpPost()]
+    public async Task<ActionResult> UpdateCampaign(string id, [FromBody] Campaign campaign)
+    {
+        try
+        {
+            _logger.LogInformation($"UpdateCampaign - {id} - {campaign.Behavior.PledgeMode}");
+            return Ok(await _entitiesService.UpdateCampaign(id, campaign));
+        }
+        catch (Exception e)
+        {
+            _logger.LogError($"UpdateCampaign - Exception: " + e.Message);
+            return StatusCode(500);
+        }
+    }
+
     [Route("signalr")]
     [HttpPost()]
     public async Task<ActionResult> SendCampaign([FromBody] string ignore)
@@ -91,7 +121,7 @@ public class FunctionController : ControllerBase
             var campaign = new Campaign();
             campaign.Identifier = Guid.NewGuid().ToString();
             campaign.Title = Summaries[Random.Shared.Next(Summaries.Length)];
-            campaign.PledgesCount = Random.Shared.Next(Summaries.Length);
+            campaign.FulfilledPledgesCount = Random.Shared.Next(Summaries.Length);
             _logger.LogInformation($"SendCampaign - {campaign.Identifier}");
             campaign.CreatedTime = DateTime.Now;
             campaign.LastUpdatedTime = DateTime.Now;

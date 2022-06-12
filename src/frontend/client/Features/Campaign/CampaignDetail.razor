@@ -1,8 +1,11 @@
 @page "/campaign/{Id}"
 @using System.Globalization
 @using Microsoft.AspNetCore.SignalR.Client
+@using client.Features.Donor
 @inject NavigationManager NavigationManager
+@inject DialogService dialogService
 @inject HttpClient Http
+@inject ILocalStorageService _locaStorage
 @implements IAsyncDisposable
 
 <PageTitle>Campaign @Id</PageTitle>
@@ -21,9 +24,6 @@
 else
 {
     <div class="form-group">
-    <RadzenButton Click="@SwitchToPublicView" Disabled="@(!IsUserView && !IsOrganizerView)" Text="Public View"></RadzenButton>
-    <RadzenButton Click="@SwitchToUserView" Disabled="@(!IsPublicView && !IsOrganizerView)" Text="User View"></RadzenButton>
-    <RadzenButton Click="@SwitchToOrganizerView" Disabled="@(!IsUserView && !IsPublicView)" Text="Organizer View"></RadzenButton>
     <button @onclick="SwitchToPublicView" disabled="@(!IsUserView && !IsOrganizerView)">Public View</button>    
     <button @onclick="SwitchToUserView" disabled="@(!IsPublicView && !IsOrganizerView)">User View</button>    
     <button @onclick="SwitchToOrganizerView" disabled="@(!IsUserView && !IsPublicView)">Organizer View</button>    
@@ -36,128 +36,64 @@ else
         <span>Title: @_selectedCampaign.Title</span><br> 
         <span>Active? @_selectedCampaign.IsActive</span><br> 
         <span>Current Fund: @_selectedCampaign.Fund @_selectedCampaign.Currency</span><br> 
+        @if (this.IsOrganizerView)
+        {
+        <span>Match Fund: @_selectedCampaign.MatchFund @_selectedCampaign.Currency</span><br> 
+        <span>Match Completion Ratio: @MatchCompletionRatio.ToString("P", CultureInfo.InvariantCulture)</span><br>
+        }
         <span>Goal: @_selectedCampaign.Goal @_selectedCampaign.Currency</span><br> 
-        <span>Total Pledges: @_selectedCampaign.PledgesCount</span><br> 
-        <span>Total Donors: @_selectedCampaign.DonorsCount</span><br> 
+        <span>Fulfilled Pledges: @_selectedCampaign.FulfilledPledgesCount</span><br> 
+        @if (this.IsOrganizerView)
+        {
+        <span>Pending Approval Pledges: @_selectedCampaign.PendingApprovalPledgesCount</span><br> 
+        <span>Pending Match Pledges: @_selectedCampaign.PendingMatchPledgesCount</span><br> 
+        <span>Rejected Pledges: @_selectedCampaign.RejectedPledgesCount</span><br> 
+        <span>Errored Pledges: @_selectedCampaign.ErroredPledgesCount</span><br> 
+        }
+        <span>Donors: @_selectedCampaign.DonorsCount</span><br> 
     </div>
     <div class="col-md-4"> 
         @if (this.IsPublicView)
         {
             <img src="images/campaign-qr.png"/>
         }
+        else if (this.IsOrganizerView)
+        {
+            <button class="btn btn-info" @onclick="OpenUpdateBehaviorForm">Update Behavior</button>    
+        }
+        else if (this.IsUserView && this.IsRegistered)
+        {
+            <button class="btn btn-primary" @onclick="OpenPledgeForm">Pledge</button>    
+        }
+        else if (this.IsUserView && !this.IsRegistered)
+        {
+            <button class="btn btn-warning" @onclick="OpenRegistrationForm">Register</button>    
+        }
     </div>
 </div>
 
-    <div>
-    </div>
 
-    @if (this.IsUserView)
+    @if (!this.IsOrganizerView)
     {
-        <br>
-
-        <div class="form-group">
-            <label>
-                Donation Confirmation:
-                @donorConfirmation
-            </label>
-        </div>
-        <div class="form-group">
-            <label>
-                User:
-                <input @bind="donorName" />
-            </label>
-        </div>
-        <div class="form-group">
-            <label>
-                Message:
-                <input @bind="donorAmount" size="50" />
-            </label>
-        </div>
-        <RadzenButton Click="@Donate" Disabled="@(!IsConnected || !_selectedCampaign.IsActive)" Text="Donate" ButtonStyle="ButtonStyle.Primary"></RadzenButton>
-        <button @onclick="Donate" disabled="@(!IsConnected || !_selectedCampaign.IsActive)">Donate</button>    
-    }
-
-    <h5 class="mt-5 mb-4">Latest @_selectedCampaign.LastItemsCount Pledges</h5>
+    <h5 class="mt-5 mb-4">Latest @_selectedCampaign.LastItemsCount Fulfilled Pledges</h5>
 
     <table class="table">
         <thead>
             <tr>
-                <th style="width:70%">NAME</th>
+                <th style="width:20%">USERNAME</th>
+                <th style="width:30%">NAME</th>
+                <th style="width:20%">TIME</th>
                 <th style="width:15%">AMOUNT</th>
                 <th style="width:15%">% OF FUND</th>
             </tr>
         </thead>
         <tbody>
-            @foreach (var pledge in _selectedCampaign.Pledges)
+            @foreach (var pledge in _selectedCampaign.FulfilledPledges)
             {
                 <tr>
                     <td>@pledge.UserName</td>
-                    <td>@pledge.Amount @pledge.Currency</td>
-                    <td>@pledge.PercentageOfTotalFund.ToString("P", CultureInfo.InvariantCulture)</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-
-    <h5 class="mt-5 mb-4">Latest @_selectedCampaign.LastItemsCount Pending Approval Pledges</h5>
-
-    <table class="table">
-        <thead>
-            <tr>
-                <th style="width:70%">NAME</th>
-                <th style="width:15%">AMOUNT</th>
-                <th style="width:15%">% OF FUND</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var pledge in _selectedCampaign.PendingApprovalPledges)
-            {
-                <tr>
-                    <td>@pledge.UserName</td>
-                    <td>@pledge.Amount @pledge.Currency</td>
-                    <td>@pledge.PercentageOfTotalFund.ToString("P", CultureInfo.InvariantCulture)</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-
-    <h5 class="mt-5 mb-4">Latest @_selectedCampaign.LastItemsCount Rejected Pledges</h5>
-
-    <table class="table">
-        <thead>
-            <tr>
-                <th style="width:70%">NAME</th>
-                <th style="width:15%">AMOUNT</th>
-                <th style="width:15%">% OF FUND</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var pledge in _selectedCampaign.RejectedPledges)
-            {
-                <tr>
-                    <td>@pledge.UserName</td>
-                    <td>@pledge.Amount @pledge.Currency</td>
-                    <td>@pledge.PercentageOfTotalFund.ToString("P", CultureInfo.InvariantCulture)</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-
-    <h5 class="mt-5 mb-4">Latest @_selectedCampaign.LastItemsCount Errored Pledges</h5>
-
-    <table class="table">
-        <thead>
-            <tr>
-                <th style="width:70%">NAME</th>
-                <th style="width:15%">AMOUNT</th>
-                <th style="width:15%">% OF FUND</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var pledge in _selectedCampaign.ErroredPledges)
-            {
-                <tr>
-                    <td>@pledge.UserName</td>
+                    <td>@pledge.Name</td>
+                    <td>@pledge.FulfilledTime</td>
                     <td>@pledge.Amount @pledge.Currency</td>
                     <td>@pledge.PercentageOfTotalFund.ToString("P", CultureInfo.InvariantCulture)</td>
                 </tr>
@@ -170,7 +106,8 @@ else
     <table class="table">
         <thead>
             <tr>
-                <th style="width:70%">NAME</th>
+                <th style="width:20%">USERNAME</th>
+                <th style="width:50%">NAME</th>
                 <th style="width:15%">AMOUNT</th>
                 <th style="width:15%">% OF FUND</th>
             </tr>
@@ -180,6 +117,93 @@ else
             {
                 <tr>
                     <td>@donor.UserName</td>
+                    <td>@donor.Name</td>
+                    <td>@donor.Amount @donor.Currency</td>
+                    <td>@donor.PercentageOfTotalFund.ToString("P", CultureInfo.InvariantCulture)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    }
+
+    @if (this.IsOrganizerView)
+    {
+    <h5 class="mt-5 mb-4">All Pledges</h5>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width:20%">USERNAME</th>
+                <th style="width:20%">NAME</th>
+                <th style="width:15%">TIME</th>
+                <th style="width:5%">MATCH?</th>
+                <th style="width:10%">AMOUNT</th>
+                <th style="width:10%">&nbsp;</th>
+                <th style="width:10%">&nbsp;</th>
+                <th style="width:10%">&nbsp;</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var pledge in _selectedCampaign.AllPledges)
+            {
+                <tr>
+                    <td>@pledge.UserName</td>
+                    <td>@pledge.Name</td>
+                    <td>@pledge.PledgeTime</td>
+                    <td>@pledge.IsMatch</td>
+                    <td>@pledge.Amount @pledge.Currency</td>
+                    <td>@if (pledge.CanShowApproval()) {<button class="btn btn-success" @onclick="(() => ApprovePledge(pledge.Identifier))">APPROVE</button>}</td>
+                    <td>@if (pledge.CanShowRejection()) {<button class="btn btn-danger" @onclick="(() => RejectPledge(pledge.Identifier))">REJECT</button>}</td>
+                    <td>@if (pledge.CanShowEmphasize()) {<button class="btn btn-warning" @onclick="(() => EmphasizePledge(pledge.Identifier))">EMPHASIZE</button>}</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+
+    <h5 class="mt-5 mb-4">Pending Match Pledges</h5>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width:20%">USERNAME</th>
+                <th style="width:20%">NAME</th>
+                <th style="width:25%">PLEDGE TIME</th>
+                <th style="width:15%">MATCH AMOUNT</th>
+                <th style="width:15%">NOTE</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var match in _selectedCampaign.PendingMatchPledges)
+            {
+                <tr>
+                    <td>@match.UserName</td>
+                    <td>@match.Name</td>
+                    <td>@match.PledgeTime</td>
+                    <td>@match.Amount @_selectedCampaign.Currency</td>
+                    <td>@match.Note</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <h5 class="mt-5 mb-4">Top @_selectedCampaign.LastItemsCount Donors</h5>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width:20%">USERNAME</th>
+                <th style="width:50%">NAME</th>
+                <th style="width:15%">AMOUNT</th>
+                <th style="width:15%">% OF FUND</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var donor in _selectedCampaign.Donors)
+            {
+                <tr>
+                    <td>@donor.UserName</td>
+                    <td>@donor.Name</td>
                     <td>@donor.Amount @donor.Currency</td>
                     <td>@donor.PercentageOfTotalFund.ToString("P", CultureInfo.InvariantCulture)</td>
                 </tr>
@@ -187,41 +211,81 @@ else
         </tbody>
     </table>
 
-    <h5 class="mt-5 mb-4">Top @_selectedCampaign.LastItemsCount Matches</h5>
+    <h5 class="mt-5 mb-4">Latest @_selectedCampaign.LastItemsCount Rejected Pledges</h5>
 
     <table class="table">
         <thead>
             <tr>
-                <th style="width:70%">NAME</th>
+                <th style="width:20%">USERNAME</th>
+                <th style="width:50%">NAME</th>
                 <th style="width:15%">AMOUNT</th>
-                <th style="width:15%">NOTE</th>
+                <th style="width:15%">% OF FUND</th>
             </tr>
         </thead>
         <tbody>
-            @foreach (var match in _selectedCampaign.Matches)
+            @foreach (var pledge in _selectedCampaign.RejectedPledges)
             {
                 <tr>
-                    <td>@match.UserName</td>
-                    <td>@match.Amount @_selectedCampaign.Currency</td>
-                    <td>@match.Note</td>
+                    <td>@pledge.UserName</td>
+                    <td>@pledge.Name</td>
+                    <td>@pledge.Amount @pledge.Currency</td>
+                    <td>@pledge.PercentageOfTotalFund.ToString("P", CultureInfo.InvariantCulture)</td>
                 </tr>
             }
         </tbody>
     </table>
+
+    <h5 class="mt-5 mb-4">Latest @_selectedCampaign.LastItemsCount Errored Pledges</h5>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width:20%">USERNAME</th>
+                <th style="width:50%">ERROR</th>
+                <th style="width:15%">AMOUNT</th>
+                <th style="width:15%">% OF FUND</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var pledge in _selectedCampaign.ErroredPledges)
+            {
+                <tr>
+                    <td>@pledge.UserName</td>
+                    <td>@pledge.Error</td>
+                    <td>@pledge.Amount @pledge.Currency</td>
+                    <td>@pledge.PercentageOfTotalFund.ToString("P", CultureInfo.InvariantCulture)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    }
 }
 
 @code {
-    private string donorName = "";
-    private double donorAmount = 0;
-    private string donorConfirmation = "";
+    private string updateConfirmation = "";
+    private string commandConfirmation = "";
     private bool IsUserView = true;
     private bool IsPublicView = false;
     private bool IsOrganizerView = false;
+    private bool IsRegistered = false;
     private Campaign _selectedCampaign = new Campaign();
     private HubConnection? _hubConnection;
     private List<SimpleMessage> simpleMessages = new List<SimpleMessage>(); 
  
     [Parameter] public string Id { get; set; } = default!;
+
+    private double MatchCompletionRatio 
+    {
+        get
+        {
+            if (_selectedCampaign != null && _selectedCampaign.ActiveMatchPledge != null && _selectedCampaign.ActiveMatchPledge .Amount > 0)
+            {
+                return _selectedCampaign.MatchFund / _selectedCampaign.ActiveMatchPledge .Amount;
+            }
+
+            return 0;
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -244,6 +308,11 @@ else
             });
 
             await _hubConnection.StartAsync();
+
+            if (await _locaStorage.GetItemAsync<string>("token") == "pledge-manager")
+            {
+                IsRegistered = true;
+            }
         }
         catch (HttpRequestException ex)
         {
@@ -251,28 +320,78 @@ else
         }
     }
 
-    private async Task Donate()
+    private async Task ApprovePledge(String id)
     {
         try
         {
-            this.donorConfirmation = "";
-            var pledge = new Pledge();
-            pledge.CampaignIdentifier = _selectedCampaign.Identifier;
-            pledge.Amount = donorAmount;
-            pledge.UserName = donorName;
-            var response = await Http.PostAsJsonAsync<Pledge>($"function/campaigns/{_selectedCampaign.Identifier}/pledges", pledge);
+            this.commandConfirmation = "";
+            var command = new CampaignCommand();
+            command.CampaignIdentifier = _selectedCampaign.Identifier;
+            command.UserName = "2105551207"; //TODO: Organizer
+            command.Command = CampaignCommand.APPROVE_PLEDGE;
+            command.Arg1 = id;
+
+            var response = await Http.PostAsJsonAsync<CampaignCommand>($"function/campaigns/{_selectedCampaign.Identifier}/commands", command);
             if (!response.IsSuccessStatusCode) 
             {
                 throw new ApplicationException($"{response.StatusCode}-{response.ReasonPhrase}");
             }
 
-            this.donorConfirmation = await response.Content.ReadAsStringAsync();
-            this.donorAmount = 0;
-            this.donorName = "";
+            this.commandConfirmation = await response.Content.ReadAsStringAsync();
         }
         catch (HttpRequestException ex)
         {
-            Console.WriteLine($"There was a problem donating: {ex.Message}");
+            Console.WriteLine($"There was a problem commanding: {ex.Message}");
+        }
+    }
+
+    private async Task RejectPledge(string id)
+    {
+        try
+        {
+            this.commandConfirmation = "";
+            var command = new CampaignCommand();
+            command.CampaignIdentifier = _selectedCampaign.Identifier;
+            command.UserName = "2105551207"; //TODO: Organizer
+            command.Command = CampaignCommand.REJECT_PLEDGE;
+            command.Arg1 = id;
+
+            var response = await Http.PostAsJsonAsync<CampaignCommand>($"function/campaigns/{_selectedCampaign.Identifier}/commands", command);
+            if (!response.IsSuccessStatusCode) 
+            {
+                throw new ApplicationException($"{response.StatusCode}-{response.ReasonPhrase}");
+            }
+
+            this.commandConfirmation = await response.Content.ReadAsStringAsync();
+        }
+        catch (HttpRequestException ex)
+        {
+            Console.WriteLine($"There was a problem commanding: {ex.Message}");
+        }
+    }
+
+    private async Task EmphasizePledge(string id)
+    {
+        try
+        {
+            this.commandConfirmation = "";
+            var command = new CampaignCommand();
+            command.CampaignIdentifier = _selectedCampaign.Identifier;
+            command.UserName = "2105551207"; //TODO: Organizer
+            command.Command = CampaignCommand.REJECT_PLEDGE;
+            command.Arg1 = id;
+
+            var response = await Http.PostAsJsonAsync<CampaignCommand>($"function/campaigns/{_selectedCampaign.Identifier}/commands", command);
+            if (!response.IsSuccessStatusCode) 
+            {
+                throw new ApplicationException($"{response.StatusCode}-{response.ReasonPhrase}");
+            }
+
+            this.commandConfirmation = await response.Content.ReadAsStringAsync();
+        }
+        catch (HttpRequestException ex)
+        {
+            Console.WriteLine($"There was a problem commanding: {ex.Message}");
         }
     }
 
@@ -306,5 +425,43 @@ else
         this.IsUserView = true;
         this.IsPublicView = false;
         this.IsOrganizerView = false;
+    }
+
+    private async Task OpenRegistrationForm() 
+    {
+        await dialogService.OpenAsync<DonorRegistrationForm>($"Campaign {_selectedCampaign.Identifier}",
+            new Dictionary<string, object>() { 
+            },
+            new DialogOptions() { Width = "700px", Height = "530px", Resizable = true, Draggable = true }
+        );
+        Console.WriteLine($"Done with OpenRegistrationForm");
+
+        //TODO:
+        if (await _locaStorage.GetItemAsync<string>("token") == "pledge-manager")
+        {
+            IsRegistered = true;
+        }
+    }
+
+    private async Task OpenPledgeForm() 
+    {
+        await dialogService.OpenAsync<DonorPledgeForm>($"Campaign {_selectedCampaign.Identifier}",
+            new Dictionary<string, object>() { 
+                { "Id", _selectedCampaign.Identifier }
+            },
+            new DialogOptions() { Width = "700px", Height = "530px", Resizable = true, Draggable = true }
+        );
+        Console.WriteLine($"Done with OpenRegistrationForm");
+    }
+
+    private async Task OpenUpdateBehaviorForm() 
+    {
+        await dialogService.OpenAsync<CampaignUpdateForm>($"Campaign {_selectedCampaign.Identifier}",
+            new Dictionary<string, object>() { 
+                { "Id", _selectedCampaign.Identifier }
+            },
+            new DialogOptions() { Width = "700px", Height = "530px", Resizable = true, Draggable = true }
+        );
+        Console.WriteLine($"Done with OpenUpdateBehaviorForm");
     }
 }

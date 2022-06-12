@@ -193,7 +193,7 @@ public class EntitiesController : ControllerBase
             var actorId = new ActorId(id);
             var proxy = ActorProxy.Create<ICampaignActor>(actorId, nameof(CampaignActor));
             await proxy.Update(campaign);
-            return Ok();
+            return Ok("something");
         }
         catch (Exception e)
         {
@@ -234,7 +234,7 @@ public class EntitiesController : ControllerBase
             command.CampaignIdentifier = campaign.Identifier;
             _logger.LogInformation($"CommandCampaignAsync - {command.Identifier}");
             await daprClient.PublishEventAsync(Constants.DAPR_CAMPAIGNS_PUBSUB_NAME, Constants.DAPR_COMMANDS_PUBSUB_TOPIC_NAME, command);
-            return Ok();
+            return Ok(command.Confirmation);
         }
         catch (Exception e)
         {

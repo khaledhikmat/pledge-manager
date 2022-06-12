@@ -1,0 +1,69 @@
+@inject HttpClient _httpClient
+
+<h1>Campaign Behavior Update</h1>
+
+@if (_showSuccess)
+{
+    <blockquote>
+        <strong>Campaign Behavior Saved Successfully!</strong>
+    </blockquote>
+}
+
+<Card>
+    <EditForm Model="_selectedCampaign" OnValidSubmit="HandleFormSubmit">
+        <FluentValidationValidator />
+
+        <label for="mode">Mode</label>
+        <InputSelect id="mode" type="text" @bind-Value="@_selectedCampaign.Behavior.PledgeMode">
+            <option value="@CampaignPledgeModes.AutoApproval">Auto</option>
+            <option value="@CampaignPledgeModes.ManualApproval">Manual</option>
+            <option value="@CampaignPledgeModes.HybridApproval">Hybrid</option>
+        </InputSelect>
+        <ValidationMessage For="() => _selectedCampaign.Behavior.PledgeMode" />
+
+        <label for="goal">Deactive When Goal Reached</label>
+        <InputCheckbox id="goal" @bind-Value="@_selectedCampaign.Behavior.AutoDeactivateWhenGoalReached" />
+        <ValidationMessage For="() => _selectedCampaign.Behavior.AutoDeactivateWhenGoalReached" />
+
+        <button type="submit">Save</button>
+    </EditForm>
+</Card>
+
+@code {
+    [Parameter] 
+    public string Id { get; set; } = default!;
+
+    bool _showSuccess = false;
+    private Campaign _selectedCampaign = new Campaign();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _selectedCampaign = await _httpClient.GetFromJsonAsync<Campaign>($"function/campaigns/{Id}") ?? new Campaign();
+            Console.WriteLine($"retrieved campaign successfully!");
+        }
+        catch (HttpRequestException ex)
+        {
+            Console.WriteLine($"There was a problem loading campaign data: {ex.Message}");
+        }
+    }
+
+    private async Task HandleFormSubmit()
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync<Campaign>($"function/campaigns/{_selectedCampaign.Identifier}/updates", _selectedCampaign);
+            if (!response.IsSuccessStatusCode) 
+            {
+                throw new ApplicationException($"{response.StatusCode}-{response.ReasonPhrase}");
+            }
+
+            _showSuccess = true;
+        }
+        catch (HttpRequestException ex)
+        {
+            Console.WriteLine($"There was a problem updating: {ex.Message}");
+        }
+    }
+}

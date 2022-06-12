@@ -1,0 +1,105 @@
+@inject HttpClient _httpClient
+
+<h3>Donor Pledge</h3>
+
+@if (_showSuccess)
+{
+    <blockquote>
+        <strong>Pledge is successful!</strong>
+    </blockquote>
+}
+
+<div class="form-group">
+    <label>
+        CONFIRMATION:
+        @donorConfirmation
+    </label>
+</div>
+<div class="form-group">
+    <label>
+        ANONYMOUS:
+        <input @bind="IsAnonymousDonor" type="checkbox" @onclick="HandleAnonymousChange"/>
+    </label>
+</div>
+<div class="form-group">
+    <label>
+        NAME:
+        <input @bind="donorName" disabled="@(IsAnonymousDonor)" />
+    </label>
+</div>
+<div class="form-group">
+    <label>
+        AMOUNT:
+        <input @bind="donorAmount" size="50" />
+    </label>
+</div>
+<div class="form-group">
+    <label>
+        NOTE:
+        <input @bind="donorNote" />
+    </label>
+</div>
+<button @onclick="(() => Donate(false))" disabled="@(!_selectedCampaign.IsActive)">Pledge</button>    
+<button @onclick="(() => Donate(true))" disabled="@(!_selectedCampaign.IsActive)">Match</button>    
+
+@code {
+    bool _showSuccess = false;
+    private string donorName = "";
+    private string donorNote = "";
+    private double donorAmount = 0;
+    private string donorConfirmation = "";
+    private bool IsAnonymousDonor = false;
+
+    private Campaign _selectedCampaign = new Campaign();
+
+    [Parameter] public string Id { get; set; } = default!;
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _selectedCampaign = await _httpClient.GetFromJsonAsync<Campaign>($"function/campaigns/{Id}") ?? new Campaign();
+        }
+        catch (HttpRequestException ex)
+        {
+            Console.WriteLine($"There was a problem loading campaign data: {ex.Message}");
+        }
+    }
+
+    private async Task Donate(bool isMatch)
+    {
+        try
+        {
+            _showSuccess = false;
+            this.donorConfirmation = "";
+            var pledge = new Pledge();
+            pledge.CampaignIdentifier = _selectedCampaign.Identifier;
+            pledge.Amount = donorAmount;
+            pledge.UserName = "2105551207"; //TODO:
+            pledge.Name = IsAnonymousDonor ? "Anonymous" : donorName;
+            pledge.IsAnonymous = IsAnonymousDonor;
+            pledge.IsMatch = isMatch;
+            pledge.Note = donorNote;
+            var response = await _httpClient.PostAsJsonAsync<Pledge>($"function/campaigns/{_selectedCampaign.Identifier}/pledges", pledge);
+            if (!response.IsSuccessStatusCode) 
+            {
+                throw new ApplicationException($"{response.StatusCode}-{response.ReasonPhrase}");
+            }
+
+            this.donorConfirmation = await response.Content.ReadAsStringAsync();
+            this.donorAmount = 0;
+            this.donorName = "";
+            this.donorNote = "";
+            this.IsAnonymousDonor = false;
+            _showSuccess = true;
+        }
+        catch (HttpRequestException ex)
+        {
+            Console.WriteLine($"There was a problem donating: {ex.Message}");
+        }
+    }
+
+    private async Task HandleAnonymousChange() 
+    {
+        IsAnonymousDonor = !IsAnonymousDonor;
+    }
+}

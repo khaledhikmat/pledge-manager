@@ -73,6 +73,50 @@ namespace pledgemanager.frontend.api.Services
             return campaign;
         }
 
+        public async Task<string> CommandCampaign(string campaignId, CampaignCommand command)
+        {
+            var requestUri = $"/entities/campaigns/{campaignId}/commands";
+            var request = new HttpRequestMessage(HttpMethod.Put, requestUri);
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            request.Content = new StringContent(JsonConvert.SerializeObject(command), Encoding.UTF8, "application/json");
+            var response = await _http.SendAsync(request);
+
+            if (response == null) 
+            {
+                throw new ApplicationException($"Null response from API Endpoint!");
+            }
+
+            if (!response.IsSuccessStatusCode) 
+            {
+                throw new ApplicationException($"{response.StatusCode}-{response.ReasonPhrase}");
+            }
+
+            //return Guid.NewGuid().ToString();
+            return await response.Content.ReadFromJsonAsync<string>();
+        }
+
+        public async Task<string> UpdateCampaign(string campaignId, Campaign campaign)
+        {
+            var requestUri = $"/entities/campaigns/{campaignId}/updates";
+            var request = new HttpRequestMessage(HttpMethod.Put, requestUri);
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            request.Content = new StringContent(JsonConvert.SerializeObject(campaign), Encoding.UTF8, "application/json");
+            var response = await _http.SendAsync(request);
+
+            if (response == null) 
+            {
+                throw new ApplicationException($"Null response from API Endpoint!");
+            }
+
+            if (!response.IsSuccessStatusCode) 
+            {
+                throw new ApplicationException($"{response.StatusCode}-{response.ReasonPhrase}");
+            }
+
+            //return Guid.NewGuid().ToString();
+            return await response.Content.ReadFromJsonAsync<string>();
+        }
+
         public async Task<string> PostPledge(string campaignId, Pledge pledge)
         {
             var requestUri = $"/entities/campaigns/{campaignId}/pledges";
