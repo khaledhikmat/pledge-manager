@@ -40,7 +40,7 @@
     {
         try
         {
-            _selectedCampaign = await _httpClient.GetFromJsonAsync<Campaign>($"function/campaigns/{Id}") ?? new Campaign();
+            _selectedCampaign = await _httpClient.GetFromJsonAsync<Campaign>($"function/campaigns/{this.Id}") ?? new Campaign();
             Console.WriteLine($"retrieved campaign successfully!");
         }
         catch (HttpRequestException ex)

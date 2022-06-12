@@ -32,25 +32,56 @@ else
 
 <div class="row">
     <div class="col-md-8">
-        <span>Institution: @_selectedCampaign.Institution</span><br> 
-        <span>Title: @_selectedCampaign.Title</span><br> 
-        <span>Active? @_selectedCampaign.IsActive</span><br> 
-        <span>Current Fund: @_selectedCampaign.Fund @_selectedCampaign.Currency</span><br> 
-        @if (this.IsOrganizerView)
-        {
-        <span>Match Fund: @_selectedCampaign.MatchFund @_selectedCampaign.Currency</span><br> 
-        <span>Match Completion Ratio: @MatchCompletionRatio.ToString("P", CultureInfo.InvariantCulture)</span><br>
-        }
-        <span>Goal: @_selectedCampaign.Goal @_selectedCampaign.Currency</span><br> 
-        <span>Fulfilled Pledges: @_selectedCampaign.FulfilledPledgesCount</span><br> 
-        @if (this.IsOrganizerView)
-        {
-        <span>Pending Approval Pledges: @_selectedCampaign.PendingApprovalPledgesCount</span><br> 
-        <span>Pending Match Pledges: @_selectedCampaign.PendingMatchPledgesCount</span><br> 
-        <span>Rejected Pledges: @_selectedCampaign.RejectedPledgesCount</span><br> 
-        <span>Errored Pledges: @_selectedCampaign.ErroredPledgesCount</span><br> 
-        }
-        <span>Donors: @_selectedCampaign.DonorsCount</span><br> 
+        <RadzenCard>
+            <h3 class="h5">Campaign Information</h3>
+            <div class="row">
+                <div class="col-md-4">
+                    <div>Institution</div>
+                    <b>@_selectedCampaign.Institution</b>
+                    <div class="mt-3">Title</div>
+                    <b>@_selectedCampaign.Title</b>
+                    <div class="mt-3">Active</div>
+                    <b>@_selectedCampaign.IsActive</b>
+                    @if (this.IsOrganizerView)
+                    {
+                    <div class="mt-3">Match Fund</div>
+                    <b>@String.Format(new System.Globalization.CultureInfo("en-US"), "{0:C}", _selectedCampaign.MatchFund)</b>
+                    <div class="mt-3">Pending Match Pledges</div>
+                    <b>@_selectedCampaign.PendingMatchPledgesCount</b>
+                    }
+                </div>
+                <div class="col-md-4">
+                    <div>Goal</div>
+                    <b>@String.Format(new System.Globalization.CultureInfo("en-US"), "{0:C}", _selectedCampaign.Fund)</b>
+                    <div class="mt-3">Current Fund</div>
+                    <b>@String.Format(new System.Globalization.CultureInfo("en-US"), "{0:C}", _selectedCampaign.Fund)</b>
+                    <div class="mt-3">Mode</div>
+                    <b>@_selectedCampaign.Behavior.PledgeMode</b>
+                    @if (this.IsOrganizerView)
+                    {
+                    <div class="mt-3">Match Completion Ratio</div>
+                    <b>@MatchCompletionRatio.ToString("P", CultureInfo.InvariantCulture)</b>
+                    <div class="mt-3">Rejected Pledges</div>
+                    <b>@_selectedCampaign.RejectedPledgesCount</b>
+                    }
+                </div>
+                <div class="col-md-4">
+                    <div>Fulfilled Pledges</div>
+                    <b>@(_selectedCampaign.FulfilledPledgesCount)</b>
+                    <div class="mt-3">Donors</div>
+                    <b>@(_selectedCampaign.DonorsCount)</b>
+                    <div class="mt-3">Featured</div>
+                    <b>@_selectedCampaign.IsFeatured</b>
+                    @if (this.IsOrganizerView)
+                    {
+                    <div class="mt-3">Pending Approval Pledges</div>
+                    <b>@_selectedCampaign.PendingApprovalPledgesCount</b>
+                    <div class="mt-3">Errored Pledges</div>
+                    <b>@_selectedCampaign.ErroredPledgesCount</b>
+                    }
+                </div>
+            </div>
+        </RadzenCard>
     </div>
     <div class="col-md-4"> 
         @if (this.IsPublicView)
@@ -59,15 +90,35 @@ else
         }
         else if (this.IsOrganizerView)
         {
-            <button class="btn btn-info" @onclick="OpenUpdateBehaviorForm">Update Behavior</button>    
+            <RadzenCard>
+                <div class="row">
+                    <div class="col-md-12 text-center text-uppercase">
+                        <button class="btn btn-info mt-1 w-100" @onclick="OpenUpdateBehaviorForm">UPDATE BEHAVIOR</button><br>    
+                        <button class="btn btn-info mt-1 w-100" @onclick="OpenWorkInProgressDialog">REQUEST FEATURED</button><br>    
+                        <button class="btn btn-info mt-1 w-100" @onclick="OpenWorkInProgressDialog">START CAMPAIGN</button><br>    
+                        <button class="btn btn-info mt-1 w-100" @onclick="OpenWorkInProgressDialog">STOP CAMPAIGN</button><br>    
+                        <button class="btn btn-info mt-1 w-100" @onclick="OpenWorkInProgressDialog">EXPORT DONORS</button><br>    
+                        <button class="btn btn-info mt-1 w-100" @onclick="OpenWorkInProgressDialog">REMIND DONORS</button><br>    
+                    </div>
+                </div>
+            </RadzenCard>
         }
         else if (this.IsUserView && this.IsRegistered)
         {
-            <button class="btn btn-primary" @onclick="OpenPledgeForm">Pledge</button>    
-        }
-        else if (this.IsUserView && !this.IsRegistered)
-        {
-            <button class="btn btn-warning" @onclick="OpenRegistrationForm">Register</button>    
+            <RadzenCard>
+                <div class="row">
+                    <div class="col-md-12 text-center text-uppercase">
+                        @if (!this.IsRegistered)
+                        {
+                        <button class="btn btn-warning mt-1 w-100" @onclick="OpenRegistrationForm">REGISTER</button>    
+                        }
+                        else 
+                        {
+                        <button class="btn btn-primary" @onclick="OpenPledgeForm">PLEDGE</button>    
+                        }
+                    </div>
+                </div>
+            </RadzenCard>
         }
     </div>
 </div>
@@ -133,11 +184,12 @@ else
     <table class="table">
         <thead>
             <tr>
-                <th style="width:20%">USERNAME</th>
-                <th style="width:20%">NAME</th>
+                <th style="width:25%">DONOR</th>
                 <th style="width:15%">TIME</th>
-                <th style="width:5%">MATCH?</th>
                 <th style="width:10%">AMOUNT</th>
+                <th style="width:5%">MATCH?</th>
+                <th style="width:5%">DEFERRED?</th>
+                <th style="width:5%">ANONYMOUS?</th>
                 <th style="width:10%">&nbsp;</th>
                 <th style="width:10%">&nbsp;</th>
                 <th style="width:10%">&nbsp;</th>
@@ -147,11 +199,12 @@ else
             @foreach (var pledge in _selectedCampaign.AllPledges)
             {
                 <tr>
-                    <td>@pledge.UserName</td>
-                    <td>@pledge.Name</td>
-                    <td>@pledge.PledgeTime</td>
-                    <td>@pledge.IsMatch</td>
-                    <td>@pledge.Amount @pledge.Currency</td>
+                    <td>@pledge.UserName (@pledge.Name)</td>
+                    <td>@pledge.PledgeTime.ToString("dddd, dd MMMM yyyy HH:mm:ss")</td>
+                    <td><RadzenBadge BadgeStyle="BadgeStyle.Secondary" Class="price-badge" Text=@($"{String.Format(new System.Globalization.CultureInfo("en-US"), "{0:C}", pledge.Amount)}") /></td>
+                    <td>@if (pledge.IsMatch) {<RadzenIcon Icon="check_circle" />} else {<RadzenIcon Icon="highlight_off" />}</td>
+                    <td>@if (pledge.IsMatch) {<RadzenIcon Icon="check_circle" />} else {<RadzenIcon Icon="highlight_off" />}</td>
+                    <td>@if (pledge.IsAnonymous) {<RadzenIcon Icon="check_circle" />} else {<RadzenIcon Icon="highlight_off" />}</td>
                     <td>@if (pledge.CanShowApproval()) {<button class="btn btn-success" @onclick="(() => ApprovePledge(pledge.Identifier))">APPROVE</button>}</td>
                     <td>@if (pledge.CanShowRejection()) {<button class="btn btn-danger" @onclick="(() => RejectPledge(pledge.Identifier))">REJECT</button>}</td>
                     <td>@if (pledge.CanShowEmphasize()) {<button class="btn btn-warning" @onclick="(() => EmphasizePledge(pledge.Identifier))">EMPHASIZE</button>}</td>
@@ -159,7 +212,6 @@ else
             }
         </tbody>
     </table>
-
 
     <h5 class="mt-5 mb-4">Pending Match Pledges</h5>
 
@@ -463,5 +515,14 @@ else
             new DialogOptions() { Width = "700px", Height = "530px", Resizable = true, Draggable = true }
         );
         Console.WriteLine($"Done with OpenUpdateBehaviorForm");
+    }
+
+    private async Task OpenWorkInProgressDialog() 
+    {
+        var result = await dialogService.OpenAsync("Work in Progress", ds =>
+            @<div>
+                <p class="mb-4">We are working in it!</p>
+            </div>
+        );
     }
 }
