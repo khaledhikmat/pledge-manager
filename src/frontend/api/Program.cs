@@ -11,7 +11,7 @@ builder.Services.AddHttpClient("signalr");
 builder.Services.AddHttpClient("backend");
 
 // Add services to the container.
-builder.Services.AddSingleton<SignalRAuthService>(_ => new SignalRAuthService("https://my-service.service.signalr.net;"));
+builder.Services.AddSingleton<SignalRAuthService>(_ => new SignalRAuthService("Endpoint=https://my-service.service.signalr.net;"));
 builder.Services.AddSingleton<SignalRRestService>();
 builder.Services.AddSingleton<ISettingService, SettingService>();
 builder.Services.AddSingleton<IEntitiesService, EntitiesService>();

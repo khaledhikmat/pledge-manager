@@ -54,14 +54,14 @@ public class RegionalActor : Actor, IFundSinkActor
         foreach(KeyValuePair<string, FundSink> entry in funds)
         {
             childrenCount++;
-            pledgesCount += entry.Value.PledgesCount;
+            pledgesCount += entry.Value.FulfilledPledgesCount;
             donorsCount += entry.Value.DonorsCount;
             amount += entry.Value.Fund;
         }
 
         region.LastRefreshTime = DateTime.Now;
         region.ChildrenCount = childrenCount;
-        region.PledgesCount = pledgesCount;
+        region.FulfilledPledgesCount = pledgesCount;
         region.DonorsCount = donorsCount;
         region.Fund = amount;
 

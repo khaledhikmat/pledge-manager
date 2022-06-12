@@ -54,14 +54,14 @@ public class InstitutionActor : Actor, IFundSinkActor
         foreach(KeyValuePair<string, FundSink> entry in funds)
         {
             childrenCount++;
-            pledgesCount += entry.Value.PledgesCount;
+            pledgesCount += entry.Value.FulfilledPledgesCount;
             donorsCount += entry.Value.DonorsCount;
             amount += entry.Value.Fund;
         }
 
         institution.LastRefreshTime = DateTime.Now;
         institution.ChildrenCount = childrenCount;
-        institution.PledgesCount = pledgesCount;
+        institution.FulfilledPledgesCount = pledgesCount;
         institution.DonorsCount = donorsCount;
         institution.Fund = amount;
 
@@ -88,7 +88,7 @@ public class InstitutionActor : Actor, IFundSinkActor
         input.Currency = institution.Currency;
         input.ExchangeRate = institution.ExchangeRate;
         input.ChildrenCount = institution.ChildrenCount;
-        input.PledgesCount = institution.PledgesCount;
+        input.FulfilledPledgesCount = institution.FulfilledPledgesCount;
         input.DonorsCount = institution.DonorsCount;
         input.Fund = institution.Fund;
 

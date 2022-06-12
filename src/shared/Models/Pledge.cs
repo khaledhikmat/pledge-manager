@@ -6,8 +6,10 @@ public class Pledge
     public DateTime PledgeTime { get; set; } = DateTime.Now;
     public DateTime? ApprovedTime { get; set; } = null;
     public DateTime? RejectedTime { get; set; } = null;
+    public DateTime? FulfilledTime { get; set; } = null;
     public string CampaignIdentifier { get; set; } = "";
     public bool IsAnonymous { get; set; } = false;
+    public bool IsMatch { get; set; } = false;
     public string UserName { get; set; } = "";
     public string Name { get; set; } = "";
     public string NickName { get; set; } = "";
@@ -20,4 +22,20 @@ public class Pledge
     public string Confirmation { get; set; } = Guid.NewGuid().ToString();
     public string Note { get; set; } = "";
     public string Error { get; set; } = "";
+
+    public bool CanShowApproval() 
+    {
+        return this.ApprovedTime == null && this.RejectedTime == null && this.FulfilledTime == null;
+    }
+
+    public bool CanShowRejection() 
+    {
+        return this.CanShowApproval();
+    }
+
+    public bool CanShowEmphasize() 
+    {
+        //TODO: 
+        return true;
+    }
 }

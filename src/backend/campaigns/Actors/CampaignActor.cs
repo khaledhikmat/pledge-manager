@@ -8,7 +8,6 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
     private const string COMMANDS_STATE_NAME = "campaign_commands_state";
     private const string PLEDGES_STATE_NAME = "campaign_pledges_state";
     private const string DONORS_STATE_NAME = "campaign_donors_state";
-    private const string MATCHES_STATE_NAME = "campaign_matches_state";
 
     // REMINDERS
     private const string UPDATE_EXG_RATE_REMINDER_NAME = "update-exchange-rate-reminder";
@@ -99,10 +98,10 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
             {
                 campaign.LastItemsCount = update.LastItemsCount;                
 
-                if (campaign.Pledges.Count > 0)
+                if (campaign.FulfilledPledges.Count > 0)
                 {
                     List<Pledge> campaignPledges = await GetPledgesState();
-                    campaign.Pledges = campaignPledges.OrderByDescending(d => d.PledgeTime).Take(campaign.LastItemsCount).ToList(); 
+                    campaign.FulfilledPledges = campaignPledges.OrderByDescending(d => d.PledgeTime).Take(campaign.LastItemsCount).ToList(); 
                     campaign.PendingApprovalPledges = campaignPledges.Where(d => d.ApprovedTime == null && d.RejectedTime == null).OrderByDescending(d => d.PledgeTime).Take(campaign.LastItemsCount).ToList(); 
                     campaign.ErroredPledges = campaignPledges.Where(d => !string.IsNullOrEmpty(d.Error)).OrderByDescending(d => d.PledgeTime).Take(campaign.LastItemsCount).ToList(); 
                 }
@@ -111,12 +110,6 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
                 {
                     List<Donor> campaignDonors = await GetDonorsState();
                     campaign.Donors = campaignDonors.OrderByDescending(d => d.Amount).Take(campaign.LastItemsCount).ToList(); 
-                }
-
-                if (campaign.Matches.Count > 0)
-                {
-                    List<CampaignMatch> campaignMatches = await GetMatchesState();
-                    campaign.Matches = campaignMatches.OrderByDescending(d => d.RequestTime).Take(campaign.LastItemsCount).ToList(); 
                 }
             }
 
@@ -142,7 +135,6 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
         var campaign = await this.GetCampaignState();
         List<Pledge> pledges = await this.GetPledgesState();
         List<Donor> donors = await this.GetDonorsState();
-        List<CampaignMatch> matches = await this.GetMatchesState();
         Donor donor = null;
 
         try
@@ -169,13 +161,13 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
                 throw new Exception($"Pledge amount {pledge.Amount} is not acceptable.");
             }
 
-            if (campaign.Behavior.PledgeMode == CampaignPledgeModes.AutoApproval ||
-                (campaign.Behavior.PledgeMode == CampaignPledgeModes.HybridApproval &&
-                pledge.Amount <= campaign.Behavior.AutoApprovePledgeIfAmountLE) ||
-                (campaign.Behavior.PledgeMode == CampaignPledgeModes.HybridApproval &&
-                campaign.Behavior.AutoApprovePledgeIfAnonymous && pledge.IsAnonymous))
+            if (campaign.IsPledgeApproved(pledge))
             {
                 pledge.ApprovedTime = DateTime.Now;
+                if (!pledge.IsMatch)
+                {
+                    pledge.FulfilledTime = DateTime.Now; // So we don't leave ligering...this is meant for conditional pledges
+                }
             }
 
             pledge.Currency = campaign.Currency; 
@@ -208,7 +200,7 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
         }
         finally 
         {
-            await this.RunPostPledgeProcessors(campaign, pledge, donor, null, pledges, donors, matches);
+            await this.RunPostPledgeProcessors(campaign, pledge, donor, pledges, donors);
         }
     }
 
@@ -218,7 +210,6 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
         var campaign = await this.GetCampaignState();
         List<Pledge> pledges = await this.GetPledgesState();
         List<Donor> donors = await this.GetDonorsState();
-        List<CampaignMatch> matches = await this.GetMatchesState();
         List<CampaignCommand> commands = await this.GetCommandsState();
 
         try 
@@ -262,22 +253,6 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
                 Logger.LogInformation($"CampaignActor - Archive [{this.Id.ToString()}]");
                 //TODO:
             }
-            else if (command.Command == CampaignCommand.MATCH)
-            {
-                Logger.LogInformation($"CampaignActor - Match [{this.Id.ToString()}]");
-                var match = new CampaignMatch();
-                match.CampaignIdentifier = campaign.Identifier;
-                match.RequestTime = DateTime.Now;
-                match.UserName = command.UserName;
-                match.Amount = command.Arg5;
-                match.Note = command.Arg1;
-
-                matches.Add(match);
-                campaign.Matches = matches.OrderByDescending(d => d.RequestTime).Take(campaign.LastItemsCount).ToList(); 
-                await this.SaveMatchesState(matches);
-
-                await this.RunPostPledgeProcessors(campaign, null, null, match, pledges, donors, matches);
-            }
             else if (command.Command == CampaignCommand.APPROVE_PLEDGE)
             {
                 Logger.LogInformation($"CampaignActor - approve pledge [{this.Id.ToString()}]");
@@ -287,13 +262,17 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
                     pledge.RejectedTime == null)
                 {
                     pledge.ApprovedTime = DateTime.Now;
+                    if (!pledge.IsMatch)
+                    {
+                        pledge.FulfilledTime = DateTime.Now; // So we don't leave ligering...this is meant for conditional pledges
+                    }
+
+                    await this.RunPostPledgeProcessors(campaign, pledge, null, pledges, donors);
                 }
                 else
                 {
                     throw new Exception($"Pledge [{this.Id.ToString()}] is already approved or rejected!");
                 }
-
-                await this.RunPostPledgeProcessors(campaign, pledge, null, null, pledges, donors, matches);
             }
             else if (command.Command == CampaignCommand.REJECT_PLEDGE)
             {
@@ -304,13 +283,13 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
                     pledge.RejectedTime == null)
                 {
                     pledge.RejectedTime = DateTime.Now;
+
+                    await this.RunPostPledgeProcessors(campaign, pledge, null, pledges, donors);
                 }
                 else
                 {
                     throw new Exception($"Pledge [{this.Id.ToString()}] is already approved or rejected!");
                 }
-
-                await this.RunPostPledgeProcessors(campaign, pledge, null, null, pledges, donors, matches);
             }
             else 
             {
@@ -425,7 +404,7 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
             input.Currency = campaign.Currency;
             input.ExchangeRate = campaign.ExchangeRate;
             input.ChildrenCount = campaign.ChildrenCount;
-            input.PledgesCount = campaign.PledgesCount;
+            input.FulfilledPledgesCount = campaign.FulfilledPledgesCount;
             input.DonorsCount = campaign.DonorsCount;
             input.Fund = campaign.Fund;
 
@@ -441,10 +420,8 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
         Campaign campaign, 
         Pledge pledge, 
         Donor donor, 
-        CampaignMatch match, 
         List<Pledge> pledges, 
-        List<Donor> donors, 
-        List<CampaignMatch> matches) 
+        List<Donor> donors)
     {
         try
         {
@@ -454,51 +431,49 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
 
             if (pledge != null)
             {
-                campaign.Fund += pledge.ApprovedTime != null ? pledge.Amount : 0;
+                campaign.Fund += pledge.FulfilledTime != null ? pledge.Amount : 0;
             }
 
-            Logger.LogInformation($"CampaignActor - RunPostPledgeProcessors [{this.Id.ToString()}] - Processing match...");
-            if (match != null )
+            Logger.LogInformation($"CampaignActor - RunPostPledgeProcessors [{this.Id.ToString()}] - Processing conditional pledges...");
+            var matchPledge = pledges.Where(m => m.ApprovedTime != null && m.RejectedTime == null && m.FulfilledTime == null && m.IsMatch).OrderBy(m => m.ApprovedTime).Take(1).FirstOrDefault();
+
+            if (matchPledge != null)
             {
-                await this._daprClient.SaveStateAsync<CampaignMatch>(Constants.DAPR_CAMPAIGNS_STORE_NAME, match.Identifier, match);
+                campaign.MatchFund += pledge != null && pledge.FulfilledTime != null ? pledge.Amount : 0;
             }
 
-            Logger.LogInformation($"CampaignActor - RunPostPledgeProcessors [{this.Id.ToString()}] - Processing matches...");
-            var pendingMatches = matches.Where(m => m.MatchTime == null).OrderBy(m => m.RequestTime).ToList();
-            foreach (CampaignMatch pendingMatch in pendingMatches)
+            if (matchPledge != null && campaign.MatchFund >= matchPledge.Amount)
             {
-                if (campaign.Fund >= pendingMatch.Amount)
-                {
-                    var matchPledge = new Pledge();
-                    matchPledge.CampaignIdentifier = campaign.Identifier;
-                    matchPledge.ApprovedTime = DateTime.Now;
-                    matchPledge.IsAnonymous = true;
-                    matchPledge.UserName = pendingMatch.UserName;
-                    matchPledge.Currency = campaign.Currency;
-                    matchPledge.ExchangeRate = campaign.ExchangeRate;
-                    matchPledge.Amount = campaign.Fund;
-                    matchPledge.Note = pendingMatch.Note;
+                matchPledge.FulfilledTime = DateTime.Now;
+                campaign.Fund += matchPledge.Amount;
+                campaign.MatchFund = 0;
 
-                    campaign.Fund += matchPledge.ApprovedTime != null ? matchPledge.Amount : 0;
-                    pledges.Add(matchPledge);
-
-                    pendingMatch.MatchTime = DateTime.Now;
-                    //WARNING: Saving to external store right away so we can keep matches readily available
-                    await this._daprClient.SaveStateAsync<CampaignMatch>(Constants.DAPR_CAMPAIGNS_STORE_NAME, pendingMatch.Identifier, pendingMatch);
-                }
+                await this._daprClient.SaveStateAsync<Pledge>(Constants.DAPR_CAMPAIGNS_STORE_NAME, matchPledge.Identifier, matchPledge);
             }
-
-            Logger.LogInformation($"CampaignActor - RunPostPledgeProcessors [{this.Id.ToString()}] - Processing lists...");
-            campaign.Pledges = pledges.Where(d => d.ApprovedTime != null).OrderByDescending(d => d.PledgeTime).Take(campaign.LastItemsCount).ToList(); 
-            campaign.PendingApprovalPledges = pledges.Where(d => d.ApprovedTime == null && d.RejectedTime == null).OrderByDescending(d => d.PledgeTime).Take(campaign.LastItemsCount).ToList(); 
-            campaign.RejectedPledges = pledges.Where(d => d.ApprovedTime == null && d.RejectedTime != null).OrderByDescending(d => d.PledgeTime).Take(campaign.LastItemsCount).ToList(); 
-            campaign.PledgesCount = pledges.Where(d => d.ApprovedTime != null).Count();
-            campaign.Donors = donors.OrderByDescending(d => d.Amount).Take(campaign.LastItemsCount).ToList(); 
-            campaign.DonorsCount = pledges.Select(d => d.UserName).Distinct().Count();
-            campaign.Matches = matches.OrderByDescending(d => d.RequestTime).Take(campaign.LastItemsCount).ToList(); 
 
             pledges = pledges.Select(p => {p.PercentageOfTotalFund = campaign.Fund > 0 ? p.Amount / campaign.Fund : 0; return p;}).ToList();
             donors = donors.Select(d => {d.PercentageOfTotalFund = campaign.Fund > 0 ? d.Amount / campaign.Fund : 0; return d;}).ToList();
+
+            Logger.LogInformation($"CampaignActor - RunPostPledgeProcessors [{this.Id.ToString()}] - Processing lists...");
+            campaign.FulfilledPledges = pledges.Where(d => d.FulfilledTime != null).OrderByDescending(d => d.PledgeTime).Take(campaign.LastItemsCount).ToList(); 
+            campaign.FulfilledPledgesCount = campaign.FulfilledPledges.Count();
+            campaign.ActiveMatchPledge = pledges.Where(d => d.IsMatch && d.ApprovedTime != null && d.FulfilledTime == null).OrderBy(d => d.ApprovedTime).Take(1).FirstOrDefault(); 
+            campaign.PendingMatchPledges = pledges.Where(d => d.IsMatch && d.ApprovedTime != null && d.FulfilledTime == null).OrderBy(d => d.ApprovedTime).Take(campaign.LastItemsCount).ToList();
+            campaign.PendingMatchPledgesCount = campaign.PendingMatchPledges.Count();
+            campaign.PendingApprovalPledges = pledges.Where(d => d.ApprovedTime == null && d.RejectedTime == null).OrderBy(d => d.PledgeTime).Take(campaign.LastItemsCount).ToList(); 
+            campaign.PendingApprovalPledgesCount = campaign.PendingApprovalPledges.Count; 
+            campaign.RejectedPledges = pledges.Where(d => d.ApprovedTime == null && d.RejectedTime != null).OrderByDescending(d => d.PledgeTime).Take(campaign.LastItemsCount).ToList(); 
+            campaign.RejectedPledgesCount = campaign.RejectedPledges.Count;             campaign.ErroredPledges = pledges.Where(d => !string.IsNullOrEmpty(d.Error)).OrderByDescending(d => d.PledgeTime).Take(campaign.LastItemsCount).ToList(); 
+            campaign.ErroredPledges = pledges.Where(d => !string.IsNullOrEmpty(d.Error)).OrderByDescending(d => d.PledgeTime).Take(campaign.LastItemsCount).ToList(); 
+            campaign.ErroredPledgesCount = campaign.ErroredPledges.Count;             campaign.ErroredPledges = pledges.Where(d => !string.IsNullOrEmpty(d.Error)).OrderByDescending(d => d.PledgeTime).Take(campaign.LastItemsCount).ToList(); 
+
+            //WARNING: Union the plegdes
+            campaign.AllPledges = new List<Pledge>();
+            campaign.AllPledges.AddRange(campaign.PendingApprovalPledges); 
+            campaign.AllPledges.AddRange(campaign.FulfilledPledges); 
+
+            campaign.Donors = donors.OrderByDescending(d => d.Amount).Take(campaign.LastItemsCount).ToList(); 
+            campaign.DonorsCount = pledges.Select(d => d.UserName).Distinct().Count();
 
             if (campaign.Behavior.AutoDeactivateWhenGoalReached && 
                 campaign.Fund >= campaign.Goal)
@@ -507,17 +482,12 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
                 campaign.IsActive = false;  
             }
 
-            Logger.LogInformation($"CampaignActor - RunPostPledgeProcessors [{this.Id.ToString()}] - Processing errored pledges...");
-            campaign.ErroredPledges = pledges.Where(d => !string.IsNullOrEmpty(d.Error)).OrderByDescending(d => d.PledgeTime).Take(campaign.LastItemsCount).ToList(); 
-
             Logger.LogInformation($"CampaignActor - RunPostPledgeProcessors [{this.Id.ToString()}] - {campaign.PendingApprovalPledges.Count}...");
             await this.SaveCampaignState(campaign);
             Logger.LogInformation($"CampaignActor - RunPostPledgeProcessors [{this.Id.ToString()}] - Saving campaign pledges...");
             await this.SavePledgesState(pledges);
             Logger.LogInformation($"CampaignActor - RunPostPledgeProcessors [{this.Id.ToString()}] - Saving campaign donors...");
             await this.SaveDonorsState(donors);
-            Logger.LogInformation($"CampaignActor - RunPostPledgeProcessors [{this.Id.ToString()}] - Saving campaign matches...");
-            await this.SaveMatchesState(matches);
 
             Logger.LogInformation($"CampaignActor - RunPostPledgeProcessors [{this.Id.ToString()}] - Saving saving pldge and donor...");
             //WARNING: Saving to external store right away so we can keep pledges and donors readuly available
@@ -673,29 +643,6 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
     private async Task SaveUpdatesState(List<Campaign> updates) 
     {
         await this.StateManager.SetStateAsync(UPDATES_STATE_NAME, updates);
-    }
-
-    private async Task<List<CampaignMatch>> GetMatchesState() 
-    {
-        List<CampaignMatch> matches = new List<CampaignMatch>();
-        var actorState = await this.StateManager.TryGetStateAsync<List<CampaignMatch>>(MATCHES_STATE_NAME);
-        if (!actorState.HasValue) 
-        {
-            Logger.LogInformation($"CampaignActor - GetMatchesState [{this.Id.ToString()}]");
-            await this.StateManager.SetStateAsync(MATCHES_STATE_NAME, matches);
-            Logger.LogInformation($"CampaignActor - GetMatchesState [{this.Id.ToString()}]");
-        } 
-        else 
-        {
-            matches = actorState.Value;
-        }
-
-        return matches;
-    }
-    
-    private async Task SaveMatchesState(List<CampaignMatch> matches) 
-    {
-        await this.StateManager.SetStateAsync(MATCHES_STATE_NAME, matches);
     }
 
     private async Task RegisterReminder(string reminderName, int startUpSecs, int periodicSecs) 

@@ -12,18 +12,39 @@ public class Campaign : FundSink
     public DateTime? Stop { get; set; } = null;
     public bool IsActive { get; set; } = false;
     public int LastItemsCount { get; set; } = 10;
+    public double MatchFund {get; set; } = 0;
+    public int PendingApprovalPledgesCount { get; set; } = 0;
+    public int PendingMatchPledgesCount { get; set; } = 0;
+    public int RejectedPledgesCount { get; set; } = 0;
+    public int ErroredPledgesCount { get; set; } = 0;
     public double Goal {get; set; } = 10000;
 
     // Campaign Behavior
     public CampaignBehavior Behavior {get; set;} = new CampaignBehavior();
 
     // More recent Items (based on LastItemsCount)
-    public List<Pledge> Pledges { get; set; } = new List<Pledge>();
+    public List<Pledge> AllPledges { get; set; } = new List<Pledge>();
+    public List<Pledge> FulfilledPledges { get; set; } = new List<Pledge>();
     public List<Pledge> PendingApprovalPledges { get; set; } = new List<Pledge>();
+    public List<Pledge> PendingMatchPledges { get; set; } = new List<Pledge>();
     public List<Pledge> RejectedPledges { get; set; } = new List<Pledge>();
     public List<Pledge> ErroredPledges { get; set; } = new List<Pledge>();
     public List<Donor> Donors { get; set; } = new List<Donor>();
-    public List<CampaignMatch> Matches { get; set; } = new List<CampaignMatch>();
+    public Pledge? ActiveMatchPledge { get; set; } = null;
+
+    public bool IsPledgeApproved(Pledge pledge) 
+    {
+        if (this.Behavior.PledgeMode == CampaignPledgeModes.AutoApproval ||
+            (this.Behavior.PledgeMode == CampaignPledgeModes.HybridApproval &&
+            pledge.Amount <= this.Behavior.AutoApprovePledgeIfAmountLE) ||
+            (this.Behavior.PledgeMode == CampaignPledgeModes.HybridApproval &&
+            this.Behavior.AutoApprovePledgeIfAnonymous && pledge.IsAnonymous))
+        {
+            return true;
+        }
+
+        return false;
+    }
 }
 
 public class CampaignBehavior
@@ -66,6 +87,7 @@ public class CampaignCommand
     public DateTime? CommandTime { get; set; } = DateTime.Now;
     public string CampaignIdentifier { get; set; } = "";
     public string UserName { get; set; } = "";
+    public string Name { get; set; } = "";
     public string Command { get; set; } = "";
     public string Arg1 { get; set; } = "";
     public string Arg2 { get; set; } = "";
@@ -73,20 +95,9 @@ public class CampaignCommand
     public int Arg4 { get; set; } = 0;
     public double Arg5 { get; set; } = 0;
     public double Arg6 { get; set; } = 0;
+    public bool Arg7 { get; set; } = false;
+    public bool Arg8 { get; set; } = false;
     public string Confirmation { get; set; } = Guid.NewGuid().ToString();
-    public string Error { get; set; } = "";
-}
-
-public class CampaignMatch
-{
-    public string Identifier { get; set; } = Guid.NewGuid().ToString();
-    public DateTime? RequestTime { get; set; } = DateTime.Now;
-    public DateTime? MatchTime { get; set; } = null;
-    public string CampaignIdentifier { get; set; } = "";
-    public string UserName { get; set; } = "";
-    public double Amount { get; set; } = 0;
-    public string Confirmation { get; set; } = Guid.NewGuid().ToString();
-    public string Note { get; set; } = "";
     public string Error { get; set; } = "";
 }
 

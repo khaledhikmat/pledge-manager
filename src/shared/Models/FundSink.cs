@@ -12,7 +12,7 @@ public class FundSink
     public double ExchangeRate { get; set; } = 1;
     public double Fund { get; set; } = 0;
     public int ChildrenCount { get; set; } = 0;
-    public int PledgesCount { get; set; } = 0;
+    public int FulfilledPledgesCount { get; set; } = 0;
     public int DonorsCount { get; set; } = 0;
 }
 
