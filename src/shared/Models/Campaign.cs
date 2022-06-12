@@ -79,7 +79,6 @@ public class CampaignCommand
     public const string FEATURE = "feature";
     public const string UNFEATURE = "unfeature";
     public const string ARCHIVE = "archive";
-    public const string MATCH = "match";
     public const string APPROVE_PLEDGE = "approve-pledge";
     public const string REJECT_PLEDGE = "reject-pledge";
 
