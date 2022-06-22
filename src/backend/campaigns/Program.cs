@@ -4,7 +4,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddHttpClient("signalr");
 
 // Add services to the container.
-builder.Services.AddSingleton<SignalRAuthService>(_ => new SignalRAuthService("Endpoint=https://my-service.service.signalr.net;"));
+builder.Services.AddSingleton<SignalRAuthService>(_ => new SignalRAuthService("EEndpoint=https://my-service.service.signalr.net;"));
 builder.Services.AddSingleton<SignalRRestService>();
 
 builder.Services.AddControllers().AddDapr();

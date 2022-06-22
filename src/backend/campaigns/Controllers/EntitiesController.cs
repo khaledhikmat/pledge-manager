@@ -62,6 +62,25 @@ public class EntitiesController : ControllerBase
         }
     }
 
+    [Route("campaigns/{id}/periods")]
+    [HttpGet()]
+    public async Task<ActionResult> GetCampaignPeriodsById(string id, [FromServices] DaprClient daprClient)
+    {
+        try
+        {
+            _logger.LogInformation($"GetCampaignPeriodsById - {id}");
+            var actorId = new ActorId(id);
+            var proxy = ActorProxy.Create<ICampaignActor>(actorId, nameof(CampaignActor));
+            return Ok(await proxy.GetPeriods());
+        }
+        catch (Exception e)
+        {
+            _logger.LogError($"GetCampaignPeriodsById - {id} - Exception: " + e.Message);
+            _logger.LogError($"GetCampaignPeriodsById - {id} - Inner Exception: " + e.InnerException);
+            return StatusCode(500);
+        }
+    }
+
     [Route("campaigns")]
     [HttpGet()]
     public async Task<ActionResult> GetAllCampaigns([FromServices] DaprClient daprClient)

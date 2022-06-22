@@ -1,0 +1,106 @@
+@using client.Features.Donor
+
+@inject NavigationManager _navigationManager
+@inject DialogService _dialogService
+@inject ILocalStorageService _locaStorage
+@inject BlazorComponentBus.ComponentBus _bus
+
+@if (this.IsPublicView)
+{
+    <RadzenCard>
+        <div class="row">
+            <div class="col-md-12 text-center text-uppercase">
+                <RadzenImage 
+                    Path="images/campaign-qr.png" />
+            </div>
+        </div>
+    </RadzenCard>
+}
+else if (this.IsOrganizerView)
+{
+    <RadzenCard>
+        <div class="row">
+            <div class="col-md-12 text-center text-uppercase">
+                <button class="btn btn-primary mt-1 w-100" @onclick="OpenPledgeForm">PLEDGE</button>    
+                <button class="btn btn-warning mt-1 w-100" @onclick="OpenUpdateBehaviorForm">UPDATE BEHAVIOR</button><br>    
+                <button class="btn btn-info mt-1 w-100" @onclick="OpenWorkInProgressDialog">REQUEST FEATURED</button><br>    
+                @if (!IsCampaignActive)
+                {
+                <button class="btn btn-info mt-1 w-100" @onclick="OpenWorkInProgressDialog">START CAMPAIGN</button><br>    
+                }
+                else 
+                {
+                <button class="btn btn-info mt-1 w-100" @onclick="OpenWorkInProgressDialog">STOP CAMPAIGN</button><br>    
+                }
+                <button class="btn btn-info mt-1 w-100" @onclick="OpenWorkInProgressDialog">EXPORT DONORS</button><br>    
+                <button class="btn btn-info mt-1 w-100" @onclick="OpenWorkInProgressDialog">REMIND DONORS</button><br>    
+            </div>
+        </div>
+    </RadzenCard>
+}
+else if (this.IsUserView)
+{
+    <RadzenCard>
+        <div class="row">
+            <div class="col-md-12 text-center text-uppercase">
+                @if (IsCampaignActive)
+                {
+                <button class="btn btn-primary mt-1 w-100" @onclick="OpenPledgeForm">PLEDGE</button>    
+                }
+            </div>
+        </div>
+    </RadzenCard>
+}
+
+@code {
+    [Parameter] 
+    public Campaign Campaign { get; set; } = default!;
+
+    [Parameter] 
+    public bool IsUserView { get; set; } = false!;
+
+    [Parameter] 
+    public bool IsOrganizerView { get; set; } = false!;
+
+    [Parameter] 
+    public bool IsPublicView { get; set; } = false!;
+    
+    private bool IsCampaignActive 
+    {
+        get
+        {
+            return Campaign != null && Campaign.IsActive;
+        }
+    }
+
+    private async Task OpenPledgeForm() 
+    {
+        await _dialogService.OpenAsync<DonorPledgeForm>($"Campaign {Campaign.Identifier}",
+            new Dictionary<string, object>() { 
+                { "Id", Campaign.Identifier }
+            },
+            new DialogOptions() { Width = "700px", Height = "530px", Resizable = true, Draggable = true }
+        );
+        Console.WriteLine($"Done with OpenRegistrationForm");
+    }
+
+    private async Task OpenUpdateBehaviorForm() 
+    {
+        await _dialogService.OpenAsync<CampaignUpdateForm>($"Campaign {Campaign.Identifier}",
+            new Dictionary<string, object>() { 
+                { "Id", Campaign.Identifier }
+            },
+            new DialogOptions() { Width = "700px", Height = "530px", Resizable = true, Draggable = true }
+        );
+        Console.WriteLine($"Done with OpenUpdateBehaviorForm");
+    }
+
+    private async Task OpenWorkInProgressDialog() 
+    {
+        var result = await _dialogService.OpenAsync("Work in Progress", ds =>
+            @<div>
+                <p class="mb-4">Hang tight....we are working on it!</p>
+            </div>
+        );
+    }
+}

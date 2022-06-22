@@ -1,0 +1,39 @@
+@using pledgemanager.client.Features.Campaign.Messages
+@inject NavigationManager _navManager
+@inject BlazorComponentBus.ComponentBus _bus
+
+<RadzenCard>
+    <div class="row">
+        <div class="col-md-12">
+            <input @onkeydown="SearchForCampaign"
+                @bind="_searchTerm"
+                @bind:event="oninput"
+                type="text"
+                placeholder="Search key"
+                class="form-control form-control-lg" />
+        </div>
+    </div>
+    <br>
+    <div class="row">
+        <div class="col-md-12">
+            <button class="btn btn-primary w-100" @onclick="NotifyChange">SEARCH</button>
+        </div>
+    </div>
+</RadzenCard>
+
+@code {
+    private string _searchTerm = "";
+
+    private void SearchForCampaign(KeyboardEventArgs args)
+    {
+        if (args.Key != "Enter") return;
+        NotifyChange();
+    }
+
+    private void NotifyChange() 
+    {
+        _bus.Publish(new CampaignFilterChanged {
+            SearchKey = _searchTerm
+        });
+    }
+}

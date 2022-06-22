@@ -1,0 +1,52 @@
+<RadzenCard>
+    <div class="row">
+        <div class="col-md-12">
+            <img src="@Campaign.ImageUrl" class="card-img-top" alt="@Campaign.Name">
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12">
+            <h5 class="card-title">@Campaign.Title</h5>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-6">
+            Institution
+        </div>
+        <div class="col-md-6">
+            <b>@Campaign.Institution</b>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-6">
+            Goal
+        </div>
+        <div class="col-md-6">
+            <b>@String.Format(new System.Globalization.CultureInfo("en-US"), "{0:C}", Campaign.Goal)</b>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-6">
+            Current Fund
+        </div>
+        <div class="col-md-6">
+            <b>@String.Format(new System.Globalization.CultureInfo("en-US"), "{0:C}", Campaign.Fund)</b>
+        </div>
+    </div>
+    <br>
+    <div class="row">
+        <div class="col-md-12">
+            <button class="btn btn-primary w-100" title="Monitor" @onclick="@(async () => await OnMonitor.InvokeAsync(Campaign))">
+                <i class="bi bi-chevron-double-right"></i>
+            </button>
+        </div>
+    </div>
+</RadzenCard>
+
+@code {
+    [Parameter, EditorRequired] 
+    public Campaign Campaign { get; set; } = default!;
+    
+    [Parameter, EditorRequired] 
+    public EventCallback<Campaign> OnMonitor { get; set; }
+}

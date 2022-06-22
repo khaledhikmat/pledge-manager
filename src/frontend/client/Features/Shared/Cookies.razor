@@ -1,0 +1,23 @@
+@using Microsoft.JSInterop
+@inject IJSRuntime JSRunetime
+@implements IAsyncDisposable
+
+@code {
+    private IJSObjectReference? _cookiesModule;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _cookiesModule = await JSRunetime.InvokeAsync<IJSObjectReference>("import", "./Features/Shared/Cookies.razor.js");
+        }
+    }
+    
+    public async ValueTask DisposeAsync()
+    {
+        if (_cookiesModule is not null)
+        {
+            await _cookiesModule.DisposeAsync();
+        }
+    }
+}

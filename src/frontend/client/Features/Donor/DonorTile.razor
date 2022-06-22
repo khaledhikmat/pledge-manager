@@ -1,0 +1,31 @@
+@using System.Globalization
+@inject HttpClient _httpClient
+
+<RadzenCard>
+    <div class="row">
+        <div class="col-md-4">
+            <div>UserName</div>
+            <b>@Donor.UserName</b>
+            <div class="mt-3">Name</div>
+            <b>@Donor.Name</b>
+        </div>
+        <div class="col-md-4">
+            <div>Amount</div>
+            <b><RadzenBadge BadgeStyle="BadgeStyle.Secondary" Class="price-badge" Text=@($"{String.Format(new System.Globalization.CultureInfo("en-US"), "{0:C}", Donor.Amount)}")></RadzenBadge></b>
+            <div class="mt-3">% of Fund</div>
+            <b>@Donor.PercentageOfTotalFund.ToString("P", CultureInfo.InvariantCulture)</b>
+        </div>
+        <div class="col-md-4">
+            <div>Total Pledges</div>
+            <b>@Donor.PledgesCount</b>
+        </div>
+    </div>
+</RadzenCard>
+
+@code {
+    [Parameter] 
+    public Campaign Campaign { get; set; } = default!;
+
+    [Parameter] 
+    public Donor Donor { get; set; } = default!;
+}

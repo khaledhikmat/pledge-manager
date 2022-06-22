@@ -5,52 +5,54 @@
 @if (_showSuccess)
 {
     <blockquote>
-        <strong>Pledge is successful!</strong>
+        <strong>Pledge submitted successful. Thank you.</strong>
     </blockquote>
 }
 
-<div class="form-group">
-    <label>
-        CONFIRMATION:
-        @donorConfirmation
-    </label>
-</div>
-<div class="form-group">
-    <label>
-        ANONYMOUS:
-        <input @bind="IsAnonymousDonor" type="checkbox" @onclick="HandleAnonymousChange"/>
-    </label>
-</div>
-<div class="form-group">
-    <label>
-        NAME:
-        <input @bind="donorName" disabled="@(IsAnonymousDonor)" />
-    </label>
-</div>
-<div class="form-group">
-    <label>
-        AMOUNT:
-        <input @bind="donorAmount" size="50" />
-    </label>
-</div>
-<div class="form-group">
-    <label>
-        NOTE:
-        <input @bind="donorNote" />
-    </label>
-</div>
-<button @onclick="(() => Donate(false))" disabled="@(!_selectedCampaign.IsActive)">Pledge</button>    
-<button @onclick="(() => Donate(true))" disabled="@(!_selectedCampaign.IsActive)">Match</button>    
+<RadzenCard>
+    <EditForm Model="_formPledge" OnValidSubmit="HandleFormSubmit">
+        <FluentValidationValidator />
+        <ValidationSummary/>
+
+        <p>
+            <label for="anonymous">Anonymous?</label>
+            <InputCheckbox id="anonymous" @bind-Value="@_formPledge.IsAnonymous" />
+            <ValidationMessage For="() => _formPledge.IsAnonymous" />
+        </p>
+
+        <p>
+            <label for="name">Name: </label>
+            <InputText id="name" @bind-Value="@_formPledge.Name" Disabled="@_formPledge.IsAnonymous"/>
+            <ValidationMessage For="@(() => _formPledge.Name)" />
+        </p>
+    
+        <p>
+            <label for="amount">Amount: </label>
+            <InputNumber id="amount" @bind-Value="@_formPledge.Amount" />
+            <ValidationMessage For="@(() => _formPledge.Amount)" />
+        </p>
+
+        <p>
+            <label for="match">Match?</label>
+            <InputCheckbox id="match" @bind-Value="@_formPledge.IsMatch" />
+            <ValidationMessage For="() => _formPledge.IsMatch" />
+        </p>
+
+        <p>
+            <label for="match">Deferred?</label>
+            <InputCheckbox id="match" @bind-Value="@_formPledge.IsDeferred" />
+            <ValidationMessage For="() => _formPledge.IsDeferred" />
+        </p>
+
+        <button type="submit">PLEDGE</button>
+    </EditForm>
+</RadzenCard>
 
 @code {
     bool _showSuccess = false;
-    private string donorName = "";
-    private string donorNote = "";
-    private double donorAmount = 0;
-    private string donorConfirmation = "";
-    private bool IsAnonymousDonor = false;
 
     private Campaign _selectedCampaign = new Campaign();
+    private Pledge _formPledge = new Pledge();
 
     [Parameter] public string Id { get; set; } = default!;
     protected override async Task OnInitializedAsync()
@@ -65,41 +67,28 @@
         }
     }
 
-    private async Task Donate(bool isMatch)
+    private async Task HandleFormSubmit()
     {
         try
         {
             _showSuccess = false;
-            this.donorConfirmation = "";
-            var pledge = new Pledge();
-            pledge.CampaignIdentifier = _selectedCampaign.Identifier;
-            pledge.Amount = donorAmount;
-            pledge.UserName = "2105551207"; //TODO:
-            pledge.Name = IsAnonymousDonor ? "Anonymous" : donorName;
-            pledge.IsAnonymous = IsAnonymousDonor;
-            pledge.IsMatch = isMatch;
-            pledge.Note = donorNote;
-            var response = await _httpClient.PostAsJsonAsync<Pledge>($"function/campaigns/{_selectedCampaign.Identifier}/pledges", pledge);
+
+            _formPledge.CampaignIdentifier = _selectedCampaign.Identifier;
+            _formPledge.UserName = "2105551207"; //TODO:
+            _formPledge.Name = _formPledge.IsAnonymous ? "Anonymous" : _formPledge.Name;
+            var response = await _httpClient.PostAsJsonAsync<Pledge>($"function/campaigns/{_selectedCampaign.Identifier}/pledges", _formPledge);
             if (!response.IsSuccessStatusCode) 
             {
                 throw new ApplicationException($"{response.StatusCode}-{response.ReasonPhrase}");
             }
 
-            this.donorConfirmation = await response.Content.ReadAsStringAsync();
-            this.donorAmount = 0;
-            this.donorName = "";
-            this.donorNote = "";
-            this.IsAnonymousDonor = false;
+            _formPledge.Confirmation = await response.Content.ReadAsStringAsync();
             _showSuccess = true;
+            _formPledge = new Pledge();
         }
         catch (HttpRequestException ex)
         {
             Console.WriteLine($"There was a problem donating: {ex.Message}");
         }
-    }
-
-    private async Task HandleAnonymousChange() 
-    {
-        IsAnonymousDonor = !IsAnonymousDonor;
     }
 }

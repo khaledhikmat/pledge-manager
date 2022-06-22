@@ -1,0 +1,54 @@
+@using System.Globalization
+
+<RadzenCard>
+    <h3 class="h5">Campaign Information</h3>
+    <div class="row">
+        <div class="col-md-4">
+            <div>Institution</div>
+            <b>@Campaign.Institution</b>
+            <div class="mt-3">Title</div>
+            <b>@Campaign.Title</b>
+            <div class="mt-3">Active</div>
+            <b>@Campaign.IsActive</b>
+            @if (this.IsOrganizerView)
+            {
+            <div class="mt-3">Pending Approval Pledges</div>
+            <b>@Campaign.PendingApprovalPledgesCount</b>
+            }
+        </div>
+        <div class="col-md-4">
+            <div>Goal</div>
+            <b>@String.Format(new System.Globalization.CultureInfo("en-US"), "{0:C}", Campaign.Goal)</b>
+            <div class="mt-3">Current Fund</div>
+            <b>@String.Format(new System.Globalization.CultureInfo("en-US"), "{0:C}", Campaign.Fund)</b>
+            <div class="mt-3">Mode</div>
+            <b>@Campaign.Behavior.PledgeMode</b>
+            @if (this.IsOrganizerView)
+            {
+            <div class="mt-3">Rejected Pledges</div>
+            <b>@Campaign.RejectedPledgesCount</b>
+            }
+        </div>
+        <div class="col-md-4">
+            <div>Fulfilled Pledges</div>
+            <b>@(Campaign.FulfilledPledgesCount)</b>
+            <div class="mt-3">Donors</div>
+            <b>@(Campaign.DonorsCount)</b>
+            <div class="mt-3">Featured</div>
+            <b>@Campaign.IsFeatured</b>
+            @if (this.IsOrganizerView)
+            {
+            <div class="mt-3">Errored Pledges</div>
+            <b>@Campaign.ErroredPledgesCount</b>
+            }
+        </div>
+    </div>
+</RadzenCard>
+
+@code {
+    [Parameter] 
+    public Campaign Campaign { get; set; } = default!;
+
+    [Parameter] 
+    public bool IsOrganizerView { get; set; } = false!;    
+}

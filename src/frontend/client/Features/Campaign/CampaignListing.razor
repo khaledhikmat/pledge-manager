@@ -1,0 +1,72 @@
+@using BlazorComponentBus
+@using pledgemanager.client.Features.Campaign.Messages
+@using pledgemanager.shared.Models 
+@inject NavigationManager _navManager
+@inject HttpClient _httpClient
+@inject BlazorComponentBus.ComponentBus _bus
+
+<PageTitle>Campaigns</PageTitle>
+
+@if (_campaigns == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="grid">
+        @foreach (var campaign in _searchResults)
+        {
+            <CampaignTile 
+                Campaign="campaign" 
+                OnMonitor="HandleCampaignMonitored">
+            </CampaignTile>
+        }
+    </div>
+}
+
+@code {
+    private List<Campaign>? _campaigns;
+    private List<Campaign> _searchResults = new List<Campaign>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _bus.Subscribe<CampaignFilterChanged>(HandleSearchFilterChange);
+
+            //WARNING: Ok...for now. 
+            _campaigns = await _httpClient.GetFromJsonAsync<List<Campaign>>("/function/campaigns") ?? new List<Campaign>();
+            _searchResults = _campaigns;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.ToString());
+        }
+    }
+
+    private void HandleCampaignMonitored(Campaign campaign)
+    {
+        _navManager.NavigateTo($"/campaign/{campaign.Identifier}");
+    }
+
+    private async Task HandleSearchFilterChange(MessageArgs args, CancellationToken ct) 
+    {
+        var message = args.GetMessage<CampaignFilterChanged>();
+        Console.WriteLine($"Received event: {message.SearchKey}");
+
+        if (_campaigns != null)
+        {
+            _searchResults = _campaigns.Where(
+                c => c.Title.Contains(message.SearchKey, StringComparison.CurrentCultureIgnoreCase) || 
+                c.Description.Contains(message.SearchKey, StringComparison.CurrentCultureIgnoreCase) ||
+                c.Institution.Contains(message.SearchKey, StringComparison.CurrentCultureIgnoreCase)
+                ).ToList();
+            Console.WriteLine($"Received 2");
+            StateHasChanged();
+        }
+        else
+        {
+            _searchResults = new List<Campaign>();
+        }
+    }
+}

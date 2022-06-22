@@ -1,20 +1,46 @@
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.IdentityModel.Tokens;
 using pledgemanager.frontend.api.Hubs;
 using pledgemanager.frontend.api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+var configuration = builder.Configuration;
 
 //Register an HTTP client to access signalr REST APIs directly
 builder.Services.AddHttpClient("signalr");
 
-//Register an HTTP client to access the backend APIs directly
-builder.Services.AddHttpClient("backend");
+//TODO: Once we daperize this API, there will be no need to do this
+//We can use the dapr client directly
+
+//Register an HTTP client to access the campaigns backend APIs directly
+builder.Services.AddHttpClient("campaignbackend");
+
+//Register an HTTP client to access the users backend APIs directly
+builder.Services.AddHttpClient("usersbackend");
 
 // Add services to the container.
-builder.Services.AddSingleton<SignalRAuthService>(_ => new SignalRAuthService("Endpoint=https://my-service.service.signalr.net;"));
+builder.Services.AddSingleton<IConfiguration>(configuration);
+builder.Services.AddSingleton<SignalRAuthService>(_ => new SignalRAuthService("EEndpoint=https://my-service.service.signalr.net;"));
 builder.Services.AddSingleton<SignalRRestService>();
 builder.Services.AddSingleton<ISettingService, SettingService>();
 builder.Services.AddSingleton<IEntitiesService, EntitiesService>();
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = configuration["JwtIssuer"],
+        ValidAudience = configuration["JwtAudience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JwtSecurityKey"]))
+    };
+});
 
 builder.Services.AddSignalR().AddAzureSignalR();
 builder.Services.AddControllersWithViews();
@@ -47,10 +73,14 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.MapRazorPages();
 app.MapControllers();
 app.MapHub<ChatHub>("/chathub");
 app.MapHub<CampaignHub>("/campaignhub");
+app.MapHub<PledgeHub>("/pledgehub");
 app.MapFallbackToFile("index.html");
 
 app.Run();
