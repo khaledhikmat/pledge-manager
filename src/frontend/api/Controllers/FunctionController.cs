@@ -1,3 +1,8 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.IdentityModel.Tokens;
 using pledgemanager.frontend.api.Services;
 
 namespace pledgemanager.frontend.api.Controllers;
@@ -15,13 +20,20 @@ public class FunctionController : ControllerBase
     private readonly SignalRRestService _signalRService;
     private readonly IEntitiesService _entitiesService;
     private readonly ILogger<FunctionController> _logger;
+    private readonly IConfiguration _configuration;
 
-    public FunctionController(IHttpClientFactory httpClientFactory, SignalRRestService signalRService, IEntitiesService entitiesService, ILogger<FunctionController> logger)
+    public FunctionController(
+        IHttpClientFactory httpClientFactory, 
+        SignalRRestService signalRService, 
+        IEntitiesService entitiesService, 
+        ILogger<FunctionController> logger, 
+        IConfiguration config)
     {
         _httpClientFactory = httpClientFactory;
         _signalRService = signalRService;
         _entitiesService = entitiesService;
         _logger = logger;
+        _configuration = config;
     }
 
     [HttpGet]
@@ -51,6 +63,7 @@ public class FunctionController : ControllerBase
         }
     }
 
+    [Authorize]
     [Route("campaigns/{id}")]
     [HttpGet]
     public async Task<ActionResult> GetCampaign(string id)
@@ -62,6 +75,22 @@ public class FunctionController : ControllerBase
         catch (Exception e)
         {
             _logger.LogError($"GetCampaign - Exception: " + e.Message);
+            return StatusCode(500);
+        }
+    }
+
+    [Authorize]
+    [Route("campaigns/{id}/periods")]
+    [HttpGet]
+    public async Task<ActionResult> GetCampaignPeriods(string id)
+    {
+        try
+        {
+            return Ok(await _entitiesService.GetCampaignPeriods(id));
+        }
+        catch (Exception e)
+        {
+            _logger.LogError($"GetCampaignPeriods - Exception: " + e.Message);
             return StatusCode(500);
         }
     }
@@ -81,6 +110,7 @@ public class FunctionController : ControllerBase
         }
     }
 
+    [Authorize]
     [Route("campaigns/{id}/commands")]
     [HttpPost()]
     public async Task<ActionResult> CommandCampaign(string id, [FromBody] CampaignCommand command)
@@ -96,6 +126,7 @@ public class FunctionController : ControllerBase
         }
     }
 
+    [Authorize]
     [Route("campaigns/{id}/updates")]
     [HttpPost()]
     public async Task<ActionResult> UpdateCampaign(string id, [FromBody] Campaign campaign)
@@ -112,20 +143,75 @@ public class FunctionController : ControllerBase
         }
     }
 
-    [Route("signalr")]
+    [Route("users/registrations/{username}")]
     [HttpPost()]
-    public async Task<ActionResult> SendCampaign([FromBody] string ignore)
+    public async Task<ActionResult> RegisterUser(string username)
     {
         try
         {
-            var campaign = new Campaign();
-            campaign.Identifier = Guid.NewGuid().ToString();
-            campaign.Title = Summaries[Random.Shared.Next(Summaries.Length)];
-            campaign.FulfilledPledgesCount = Random.Shared.Next(Summaries.Length);
-            _logger.LogInformation($"SendCampaign - {campaign.Identifier}");
-            campaign.CreatedTime = DateTime.Now;
-            campaign.LastUpdatedTime = DateTime.Now;
+            _logger.LogInformation($"RegisterUser - {username}");
+            await _entitiesService.RegisterUser(username);
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError($"RegisterUser - Exception: " + e.Message);
+            return StatusCode(500);
+        }
+    }
 
+    [Route("users/verifications/{username}/{code}")]
+    [HttpPost()]
+    public async Task<ActionResult> VerifyUser(string username, string code)
+    {
+        try
+        {
+            _logger.LogInformation($"VerifyUser - {username}");
+            await _entitiesService.VerifyUser(username, code);
+
+            var claims = new List<Claim>();
+            claims.Add(new Claim(ClaimTypes.Name, username));
+
+            //TODO: Read from the database
+            // Read user tags as claims
+            if (username == "2105551212")
+            {
+                claims.Add(new Claim(ClaimTypes.Role, "Organizer"));
+                claims.Add(new Claim(ClaimTypes.NameIdentifier, "INST-0001"));
+            }
+            else 
+            {
+                claims.Add(new Claim(ClaimTypes.Role, "Donor"));
+            }
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSecurityKey"]));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var expiry = DateTime.Now.AddDays(Convert.ToInt32(_configuration["JwtExpiryInDays"]));
+
+            var token = new JwtSecurityToken(
+                _configuration["JwtIssuer"],
+                _configuration["JwtAudience"],
+                claims,
+                expires: expiry,
+                signingCredentials: creds
+            );
+
+            return Ok(new LoginResult { Successful = true, Token = new JwtSecurityTokenHandler().WriteToken(token) });
+        }
+        catch (Exception e)
+        {
+            _logger.LogError($"VerifyUser - Exception: " + e.Message);
+            return StatusCode(500);
+        }
+    }
+
+    [Authorize]
+    [Route("signalr/campaigns")]
+    [HttpPost()]
+    public async Task<ActionResult> SendCampaign([FromBody] Campaign campaign)
+    {
+        try
+        {
             var payload = new PayloadMessage();
             payload.Target = "UpdateCampaign";
             payload.Arguments = new[] { campaign };
@@ -135,6 +221,26 @@ public class FunctionController : ControllerBase
         catch (Exception e)
         {
             _logger.LogError($"SendCampaign - Exception: " + e.Message);
+            return StatusCode(500);
+        }
+    }
+
+    [Authorize]
+    [Route("signalr/pledges")]
+    [HttpPost()]
+    public async Task<ActionResult> SendPledge([FromBody] Pledge pledge)
+    {
+        try
+        {
+            var payload = new PayloadMessage();
+            payload.Target = "EmphasizePledge";
+            payload.Arguments = new[] { pledge };
+            await _signalRService.CallViaRest("PledgeHub", payload);
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError($"SendPledge - Exception: " + e.Message);
             return StatusCode(500);
         }
     }

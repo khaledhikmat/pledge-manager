@@ -94,7 +94,7 @@ List<Campaign> campaigns = new List<Campaign> {
             PledgeMode = CampaignPledgeModes.AutoApproval,
             RestrictedPledgeAmounts = new List<double> {
             },
-            AutoDeactivateWhenGoalReached = true,
+            AutoDeactivateWhenGoalReached = false,
             MatchSupported = false
         }
     },

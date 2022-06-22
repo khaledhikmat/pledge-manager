@@ -10,6 +10,7 @@ public class Pledge
     public string CampaignIdentifier { get; set; } = "";
     public bool IsAnonymous { get; set; } = false;
     public bool IsMatch { get; set; } = false;
+    public bool IsDeferred { get; set; } = false;
     public string UserName { get; set; } = "";
     public string Name { get; set; } = "";
     public string NickName { get; set; } = "";

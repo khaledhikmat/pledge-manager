@@ -15,6 +15,9 @@ public class Campaign : FundSink
     public double MatchFund {get; set; } = 0;
     public int PendingApprovalPledgesCount { get; set; } = 0;
     public int PendingMatchPledgesCount { get; set; } = 0;
+    public double PendingMatchPledgesAmount { get; set; } = 0;
+    public int PendingDeferredPledgesCount { get; set; } = 0;
+    public double PendingDeferredPledgesAmount { get; set; } = 0;
     public int RejectedPledgesCount { get; set; } = 0;
     public int ErroredPledgesCount { get; set; } = 0;
     public double Goal {get; set; } = 10000;
@@ -27,6 +30,7 @@ public class Campaign : FundSink
     public List<Pledge> FulfilledPledges { get; set; } = new List<Pledge>();
     public List<Pledge> PendingApprovalPledges { get; set; } = new List<Pledge>();
     public List<Pledge> PendingMatchPledges { get; set; } = new List<Pledge>();
+    public List<Pledge> PendingDeferredPledges { get; set; } = new List<Pledge>();
     public List<Pledge> RejectedPledges { get; set; } = new List<Pledge>();
     public List<Pledge> ErroredPledges { get; set; } = new List<Pledge>();
     public List<Donor> Donors { get; set; } = new List<Donor>();
@@ -61,6 +65,8 @@ public class CampaignBehavior
     };
     public bool AutoDeactivateWhenGoalReached { get; set; } = true; 
     public bool MatchSupported { get; set; } = true; 
+    public int EmphasisPledgeDialogStartup {get; set;} = 500;
+    public int EmphasisPledgeDialogVisibility {get; set;} = 10000;
 }
 
 public enum CampaignPledgeModes

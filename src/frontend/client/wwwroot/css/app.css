@@ -21,7 +21,7 @@ a {
 
 .navbar {
     border-bottom: 2px solid var(--brand);
-    background: linear-gradient(90deg, rgba(255,255,255,1) 5%, rgba(255,255,255,0) 100%), url("../images/navbar-bg.jpg") no-repeat center;
+    background: linear-gradient(90deg, rgba(255,255,255,1) 5%, rgba(255,255,255,0) 100%), url("https://picsum.photos/2600/150") no-repeat center;
     background-size: cover;
 }
 
@@ -48,7 +48,7 @@ a {
 .grid {
     display: grid;
     grid-template-columns: repeat(3, 288px);
-    column-gap: 123px;
+    column-gap: 50px;
     row-gap: 75px;
 }
 

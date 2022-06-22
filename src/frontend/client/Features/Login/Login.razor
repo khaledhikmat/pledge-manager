@@ -1,0 +1,131 @@
+@page "/login"
+
+@using System.Net.Http.Headers
+@inject HttpClient _httpClient
+@inject ILocalStorageService _locaStorage
+@inject TokenAuthenticationStateProvider _tokenProvider;
+
+<h1>Registration & Validation</h1>
+
+@if (_showSuccess)
+{
+    <blockquote>
+        <strong>Registration Validation is successful!</strong>
+    </blockquote>
+}
+
+@if (_mode == 0)
+{
+<RadzenCard>
+    <EditForm Model="_formDonor" OnValidSubmit="HandleRegistrationFormSubmit">
+        <FluentValidationValidator />
+        <ValidationSummary/>
+
+        <p>
+            <label for="username">User Name: </label>
+            <InputText id="username" @bind-Value="@_formDonor.UserName"/>
+            <ValidationMessage For="@(() => _formDonor.UserName)" />
+        </p>
+    
+        <p>
+            <label for="name">Name: </label>
+            <InputText id="name" @bind-Value="@_formDonor.Name"/>
+            <ValidationMessage For="@(() => _formDonor.Name)" />
+        </p>
+
+        <p>
+            <label for="email">Email Address: </label>
+            <InputText id="email" @bind-Value="@_formDonor.EmailAddress"/>
+            <ValidationMessage For="@(() => _formDonor.EmailAddress)" />
+        </p>
+
+        <button type="submit">REGISTER</button>
+    </EditForm>
+</RadzenCard>
+}
+else if (_mode == 1)
+{
+<RadzenCard>
+    <EditForm Model="_formVerification" OnValidSubmit="HandleVerificationFormSubmit">
+
+        <h5>We sent you a code. Please paste it here.</h5>
+        <p>
+            <label for="code">Code: </label>
+            <InputText id="code" @bind-Value="@_formVerification.Code"/>
+            <ValidationMessage For="@(() => _formVerification.Code)" />
+        </p>
+
+        <button type="submit">VERIFY</button>
+    </EditForm>
+</RadzenCard>
+}
+
+@code {
+    bool _showSuccess = false;
+    private Donor _formDonor = new Donor();
+    private DonorVerification _formVerification = new DonorVerification();
+    private int _mode = 0; // 0 = Registration, 1 = Validation 
+
+    private async Task HandleRegistrationFormSubmit()
+    {
+        try
+        {
+            _showSuccess = false;
+
+            var requestUri = $"function/users/registrations/{_formDonor.UserName}";
+            var request = new HttpRequestMessage(HttpMethod.Post, requestUri);
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            var response = await _httpClient.SendAsync(request);
+
+            if (response == null) 
+            {
+                throw new ApplicationException($"Null response from API Endpoint!");
+            }
+
+            _mode = 1;
+
+            _formVerification = new DonorVerification();
+            _formVerification.UserName = _formDonor.UserName;
+
+            _formDonor = new Donor();
+        }
+        catch (HttpRequestException ex)
+        {
+            Console.WriteLine($"There was a problem registring: {ex.Message}");
+        }
+    }
+
+    private async Task HandleVerificationFormSubmit() 
+    {
+        try
+        {
+            _showSuccess = false;
+
+            var requestUri = $"function/users/verifications/{_formVerification.UserName}/{_formVerification.Code}";
+            var request = new HttpRequestMessage(HttpMethod.Post, requestUri);
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            var response = await _httpClient.SendAsync(request);
+
+            if (response == null) 
+            {
+                throw new ApplicationException($"Null response from API Endpoint!");
+            }
+
+            var results = await response.Content.ReadFromJsonAsync<LoginResult>();
+            if (results == null) 
+            {
+                throw new ApplicationException($"Null results from API Endpoint!");
+            }
+
+            _mode = 2;
+            _formVerification = new DonorVerification();
+            await _tokenProvider.Login(results.Token);
+
+            _showSuccess = true;
+        }
+        catch (HttpRequestException ex)
+        {
+            Console.WriteLine($"There was a problem validating: {ex.Message}");
+        }
+    }
+}

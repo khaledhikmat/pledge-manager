@@ -8,8 +8,11 @@ namespace pledgemanager.frontend.api.Services
     {
         Task<List<Campaign>> GetCampaigns();
         Task<Campaign> GetCampaign(string id);
+        Task<List<FundSinkPeriod>> GetCampaignPeriods(string id);
         Task<string> UpdateCampaign(string campaignId, Campaign campaign);
         Task<string> CommandCampaign(string campaignId, CampaignCommand command);
         Task<string> PostPledge(string campaignId, Pledge pledge);
+        Task RegisterUser(string username);
+        Task VerifyUser(string username, string code);
     }
 }

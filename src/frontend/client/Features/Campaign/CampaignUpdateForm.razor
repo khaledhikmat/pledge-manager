@@ -9,25 +9,78 @@
     </blockquote>
 }
 
-<Card>
+<RadzenCard>
     <EditForm Model="_selectedCampaign" OnValidSubmit="HandleFormSubmit">
         <FluentValidationValidator />
+        <ValidationSummary/>
 
-        <label for="mode">Mode</label>
-        <InputSelect id="mode" type="text" @bind-Value="@_selectedCampaign.Behavior.PledgeMode">
-            <option value="@CampaignPledgeModes.AutoApproval">Auto</option>
-            <option value="@CampaignPledgeModes.ManualApproval">Manual</option>
-            <option value="@CampaignPledgeModes.HybridApproval">Hybrid</option>
-        </InputSelect>
-        <ValidationMessage For="() => _selectedCampaign.Behavior.PledgeMode" />
+        <p>
+            <label for="title">Title: </label>
+            <InputText id="title" @bind-Value="@_selectedCampaign.Title" />
+            <ValidationMessage For="@(() => _selectedCampaign.Title)" />
+        </p>
+    
+        <p>
+            <label for="desc">Description: </label>
+            <InputText id="desc" @bind-Value="@_selectedCampaign.Description" />
+            <ValidationMessage For="@(() => _selectedCampaign.Description)" />
+        </p>
 
-        <label for="goal">Deactive When Goal Reached</label>
-        <InputCheckbox id="goal" @bind-Value="@_selectedCampaign.Behavior.AutoDeactivateWhenGoalReached" />
-        <ValidationMessage For="() => _selectedCampaign.Behavior.AutoDeactivateWhenGoalReached" />
+        <p>
+            <label for="imageUrl">Image URL: </label>
+            <InputText id="imageUrl" @bind-Value="@_selectedCampaign.ImageUrl" />
+            <ValidationMessage For="@(() => _selectedCampaign.ImageUrl)" />
+        </p>
 
-        <button type="submit">Save</button>
+        <p>
+            <label for="goalamount">Goal: </label>
+            <InputNumber id="goalamount" @bind-Value="@_selectedCampaign.Goal" />
+            <ValidationMessage For="@(() => _selectedCampaign.Goal)" />
+        </p>
+    
+        <p>
+            <label for="mode">Mode</label>
+            <InputSelect id="mode" type="text" @bind-Value="@_selectedCampaign.Behavior.PledgeMode">
+                <option value="@CampaignPledgeModes.AutoApproval">Auto</option>
+                <option value="@CampaignPledgeModes.ManualApproval">Manual</option>
+                <option value="@CampaignPledgeModes.HybridApproval">Hybrid</option>
+            </InputSelect>
+            <ValidationMessage For="() => _selectedCampaign.Behavior.PledgeMode" />
+        </p>
+
+        <p>
+            <label for="autoapprove">Auto Approve if amount is less than: </label>
+            <InputNumber id="autoapprove" @bind-Value="@_selectedCampaign.Behavior.AutoApprovePledgeIfAmountLE" />
+            <ValidationMessage For="@(() => _selectedCampaign.Behavior.AutoApprovePledgeIfAmountLE)" />
+        </p>
+    
+        <p>
+            <label for="anonymous">Auto Approve if anonymous</label>
+            <InputCheckbox id="anonymous" @bind-Value="@_selectedCampaign.Behavior.AutoApprovePledgeIfAnonymous" />
+            <ValidationMessage For="() => _selectedCampaign.Behavior.AutoApprovePledgeIfAnonymous" />
+        </p>
+
+        <p>
+            <label for="goal">Deactive When Goal Reached</label>
+            <InputCheckbox id="goal" @bind-Value="@_selectedCampaign.Behavior.AutoDeactivateWhenGoalReached" />
+            <ValidationMessage For="() => _selectedCampaign.Behavior.AutoDeactivateWhenGoalReached" />
+        </p>
+
+        <p>
+            <label for="emphasis-startup">Emphasis Startup in msecs: </label>
+            <InputNumber id="emphasis-startup" @bind-Value="@_selectedCampaign.Behavior.EmphasisPledgeDialogStartup" />
+            <ValidationMessage For="@(() => _selectedCampaign.Behavior.EmphasisPledgeDialogStartup)" />
+        </p>
+    
+        <p>
+            <label for="emphasis-vis-duration">Emphasis Visibility Duration in msecs: </label>
+            <InputNumber id="emphasis-vis-duration" @bind-Value="@_selectedCampaign.Behavior.EmphasisPledgeDialogVisibility" />
+            <ValidationMessage For="@(() => _selectedCampaign.Behavior.EmphasisPledgeDialogVisibility)" />
+        </p>
+
+        <button type="submit">SAVE</button>
     </EditForm>
-</Card>
+</RadzenCard>
 
 @code {
     [Parameter] 

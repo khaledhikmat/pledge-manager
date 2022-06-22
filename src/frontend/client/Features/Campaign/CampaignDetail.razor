@@ -1,370 +1,303 @@
 @page "/campaign/{Id}"
+@attribute [Authorize]
+
 @using System.Globalization
+@using BlazorComponentBus
+@using System.Timers
 @using Microsoft.AspNetCore.SignalR.Client
-@using client.Features.Donor
-@inject NavigationManager NavigationManager
-@inject DialogService dialogService
-@inject HttpClient Http
+@inject NavigationManager _navigationManager
+@inject DialogService _dialogService
+@inject HttpClient _httpClient
 @inject ILocalStorageService _locaStorage
+@inject BlazorComponentBus.ComponentBus _bus
 @implements IAsyncDisposable
 
 <PageTitle>Campaign @Id</PageTitle>
 
-<nav aria-label="breadcrumb">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="/">Home</a></li>
-        <li class="breadcrumb-item active" aria-current="page">Campaign @Id</li>
-    </ol>
-</nav>
-
+<RadzenBreadCrumb>
+    <RadzenBreadCrumbItem Path="/" Text="Home" />
+    <RadzenBreadCrumbItem Icon="add" Text="Campaign Detail" />
+</RadzenBreadCrumb>
+                
 @if (_selectedCampaign == null)
 {
     <p><em>Loading...</em></p>
 }
 else
 {
-    <div class="form-group">
-    <button @onclick="SwitchToPublicView" disabled="@(!IsUserView && !IsOrganizerView)">Public View</button>    
-    <button @onclick="SwitchToUserView" disabled="@(!IsPublicView && !IsOrganizerView)">User View</button>    
-    <button @onclick="SwitchToOrganizerView" disabled="@(!IsUserView && !IsPublicView)">Organizer View</button>    
-    </div>
-    <br>
 
-<div class="row">
-    <div class="col-md-8">
-        <RadzenCard>
-            <h3 class="h5">Campaign Information</h3>
-            <div class="row">
-                <div class="col-md-4">
-                    <div>Institution</div>
-                    <b>@_selectedCampaign.Institution</b>
-                    <div class="mt-3">Title</div>
-                    <b>@_selectedCampaign.Title</b>
-                    <div class="mt-3">Active</div>
-                    <b>@_selectedCampaign.IsActive</b>
-                    @if (this.IsOrganizerView)
-                    {
-                    <div class="mt-3">Match Fund</div>
-                    <b>@String.Format(new System.Globalization.CultureInfo("en-US"), "{0:C}", _selectedCampaign.MatchFund)</b>
-                    <div class="mt-3">Pending Match Pledges</div>
-                    <b>@_selectedCampaign.PendingMatchPledgesCount</b>
-                    }
-                </div>
-                <div class="col-md-4">
-                    <div>Goal</div>
-                    <b>@String.Format(new System.Globalization.CultureInfo("en-US"), "{0:C}", _selectedCampaign.Fund)</b>
-                    <div class="mt-3">Current Fund</div>
-                    <b>@String.Format(new System.Globalization.CultureInfo("en-US"), "{0:C}", _selectedCampaign.Fund)</b>
-                    <div class="mt-3">Mode</div>
-                    <b>@_selectedCampaign.Behavior.PledgeMode</b>
-                    @if (this.IsOrganizerView)
-                    {
-                    <div class="mt-3">Match Completion Ratio</div>
-                    <b>@MatchCompletionRatio.ToString("P", CultureInfo.InvariantCulture)</b>
-                    <div class="mt-3">Rejected Pledges</div>
-                    <b>@_selectedCampaign.RejectedPledgesCount</b>
-                    }
-                </div>
-                <div class="col-md-4">
-                    <div>Fulfilled Pledges</div>
-                    <b>@(_selectedCampaign.FulfilledPledgesCount)</b>
-                    <div class="mt-3">Donors</div>
-                    <b>@(_selectedCampaign.DonorsCount)</b>
-                    <div class="mt-3">Featured</div>
-                    <b>@_selectedCampaign.IsFeatured</b>
-                    @if (this.IsOrganizerView)
-                    {
-                    <div class="mt-3">Pending Approval Pledges</div>
-                    <b>@_selectedCampaign.PendingApprovalPledgesCount</b>
-                    <div class="mt-3">Errored Pledges</div>
-                    <b>@_selectedCampaign.ErroredPledgesCount</b>
-                    }
-                </div>
+<AuthorizeView Roles="Organizer">
+    <Authorized>
+        <div class="form-group">
+        <button @onclick="SwitchToPublicView" disabled="@(!_isUserView && !_isOrganizerView)">Public View</button>    
+        <button @onclick="SwitchToUserView" disabled="@(!_isPublicView && !_isOrganizerView)">User View</button>    
+        <button @onclick="SwitchToOrganizerView" disabled="@(!_isUserView && !_isPublicView)">Organizer View</button>    
+        </div>
+        <br>
+
+        @if (this._isOrganizerView)
+        {
+        <div class="row">
+            <div class="col-md-12">
+                <CampaignMatchesHeader
+                    Campaign="@_selectedCampaign">
+                </CampaignMatchesHeader>
             </div>
-        </RadzenCard>
-    </div>
-    <div class="col-md-4"> 
-        @if (this.IsPublicView)
-        {
-            <img src="images/campaign-qr.png"/>
+        </div>
+        <br>
         }
-        else if (this.IsOrganizerView)
+        else if (this._isPublicView)
         {
+        <div class="row">
+            <div class="col-md-12">
+                <CampaignPledgesChart
+                    Campaign="@_selectedCampaign">
+                </CampaignPledgesChart>
+            </div>
+        </div>
+        <br>
+        }
+
+        <div class="row">
+            <div class="col-md-8">
+                <CampaignHeader 
+                    Campaign="@_selectedCampaign" 
+                    IsOrganizerView="@_isOrganizerView">
+                </CampaignHeader>
+            </div>
+            <div class="col-md-4"> 
+                <CampaignCommands
+                    Campaign="@_selectedCampaign"
+                    IsOrganizerView="@_isOrganizerView"
+                    IsPublicView="@_isPublicView"
+                    IsUserView="@_isUserView">
+                </CampaignCommands>
+            </div>
+        </div>
+
+        @if (this._isOrganizerView && this._selectedCampaign.AllPledges.Count > 0)
+        {
+            <h5 class="mt-5 mb-4">All Pledges</h5>
+
             <RadzenCard>
-                <div class="row">
-                    <div class="col-md-12 text-center text-uppercase">
-                        <button class="btn btn-info mt-1 w-100" @onclick="OpenUpdateBehaviorForm">UPDATE BEHAVIOR</button><br>    
-                        <button class="btn btn-info mt-1 w-100" @onclick="OpenWorkInProgressDialog">REQUEST FEATURED</button><br>    
-                        <button class="btn btn-info mt-1 w-100" @onclick="OpenWorkInProgressDialog">START CAMPAIGN</button><br>    
-                        <button class="btn btn-info mt-1 w-100" @onclick="OpenWorkInProgressDialog">STOP CAMPAIGN</button><br>    
-                        <button class="btn btn-info mt-1 w-100" @onclick="OpenWorkInProgressDialog">EXPORT DONORS</button><br>    
-                        <button class="btn btn-info mt-1 w-100" @onclick="OpenWorkInProgressDialog">REMIND DONORS</button><br>    
-                    </div>
-                </div>
+                    @foreach (var pledge in _selectedCampaign.AllPledges)
+                    {
+                        <PledgeTile 
+                            Campaign="@_selectedCampaign" 
+                            Pledge="@pledge" 
+                            IsCommands=true>
+                        </PledgeTile>
+                    }
             </RadzenCard>
         }
-        else if (this.IsUserView && this.IsRegistered)
+
+        @if (this._isOrganizerView && this._selectedCampaign.PendingMatchPledges.Count > 0)
         {
+            <h5 class="mt-5 mb-4">Pending Match Pledges</h5>
+
             <RadzenCard>
-                <div class="row">
-                    <div class="col-md-12 text-center text-uppercase">
-                        @if (!this.IsRegistered)
-                        {
-                        <button class="btn btn-warning mt-1 w-100" @onclick="OpenRegistrationForm">REGISTER</button>    
-                        }
-                        else 
-                        {
-                        <button class="btn btn-primary" @onclick="OpenPledgeForm">PLEDGE</button>    
-                        }
-                    </div>
-                </div>
+                    @foreach (var pledge in _selectedCampaign.PendingMatchPledges)
+                    {
+                        <PledgeTile 
+                            Campaign="@_selectedCampaign" 
+                            Pledge="@pledge" 
+                            IsCommands=false>
+                        </PledgeTile>
+                    }
             </RadzenCard>
         }
-    </div>
-</div>
 
+        @if (this._isOrganizerView && this._selectedCampaign.Donors.Count > 0)
+        {
+            <h5 class="mt-5 mb-4">Top @_selectedCampaign.LastItemsCount Donors</h5>
 
-    @if (!this.IsOrganizerView)
-    {
-    <h5 class="mt-5 mb-4">Latest @_selectedCampaign.LastItemsCount Fulfilled Pledges</h5>
+            <RadzenCard>
+                    @foreach (var donor in _selectedCampaign.Donors)
+                    {
+                        <DonorTile 
+                            Campaign="@_selectedCampaign" 
+                            Donor="@donor">
+                        </DonorTile>
+                    }
+            </RadzenCard>
+        }
 
-    <table class="table">
-        <thead>
-            <tr>
-                <th style="width:20%">USERNAME</th>
-                <th style="width:30%">NAME</th>
-                <th style="width:20%">TIME</th>
-                <th style="width:15%">AMOUNT</th>
-                <th style="width:15%">% OF FUND</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var pledge in _selectedCampaign.FulfilledPledges)
-            {
-                <tr>
-                    <td>@pledge.UserName</td>
-                    <td>@pledge.Name</td>
-                    <td>@pledge.FulfilledTime</td>
-                    <td>@pledge.Amount @pledge.Currency</td>
-                    <td>@pledge.PercentageOfTotalFund.ToString("P", CultureInfo.InvariantCulture)</td>
-                </tr>
-            }
-        </tbody>
-    </table>
+        @if (this._isOrganizerView && this._selectedCampaign.RejectedPledges.Count > 0)
+        {
+            <h5 class="mt-5 mb-4">Latest @_selectedCampaign.LastItemsCount Rejected Pledges</h5>
 
-    <h5 class="mt-5 mb-4">Top @_selectedCampaign.LastItemsCount Donors</h5>
+            <RadzenCard>
+                    @foreach (var pledge in _selectedCampaign.RejectedPledges)
+                    {
+                        <PledgeTile 
+                            Campaign="@_selectedCampaign" 
+                            Pledge="@pledge" 
+                            IsCommands=false>
+                        </PledgeTile>
+                    }
+            </RadzenCard>
+        }
 
-    <table class="table">
-        <thead>
-            <tr>
-                <th style="width:20%">USERNAME</th>
-                <th style="width:50%">NAME</th>
-                <th style="width:15%">AMOUNT</th>
-                <th style="width:15%">% OF FUND</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var donor in _selectedCampaign.Donors)
-            {
-                <tr>
-                    <td>@donor.UserName</td>
-                    <td>@donor.Name</td>
-                    <td>@donor.Amount @donor.Currency</td>
-                    <td>@donor.PercentageOfTotalFund.ToString("P", CultureInfo.InvariantCulture)</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-    }
+        @if (this._isOrganizerView && this._selectedCampaign.ErroredPledges.Count > 0)
+        {
+            <h5 class="mt-5 mb-4">Latest @_selectedCampaign.LastItemsCount Errored Pledges</h5>
 
-    @if (this.IsOrganizerView)
-    {
-    <h5 class="mt-5 mb-4">All Pledges</h5>
+            <RadzenCard>
+                    @foreach (var pledge in _selectedCampaign.ErroredPledges)
+                    {
+                        <PledgeTile 
+                            Campaign="@_selectedCampaign" 
+                            Pledge="@pledge" 
+                            IsCommands=false>
+                        </PledgeTile>
+                    }
+            </RadzenCard>
+        }
+    </Authorized>
+    <NotAuthorized>
+        @* <RadzenCard>
+            <h3>Not Authorized</h3>
+            <p>You do not have permissions to view this area.</p>
+        </RadzenCard> *@
+    </NotAuthorized>
+</AuthorizeView>
 
-    <table class="table">
-        <thead>
-            <tr>
-                <th style="width:25%">DONOR</th>
-                <th style="width:15%">TIME</th>
-                <th style="width:10%">AMOUNT</th>
-                <th style="width:5%">MATCH?</th>
-                <th style="width:5%">DEFERRED?</th>
-                <th style="width:5%">ANONYMOUS?</th>
-                <th style="width:10%">&nbsp;</th>
-                <th style="width:10%">&nbsp;</th>
-                <th style="width:10%">&nbsp;</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var pledge in _selectedCampaign.AllPledges)
-            {
-                <tr>
-                    <td>@pledge.UserName (@pledge.Name)</td>
-                    <td>@pledge.PledgeTime.ToString("dddd, dd MMMM yyyy HH:mm:ss")</td>
-                    <td><RadzenBadge BadgeStyle="BadgeStyle.Secondary" Class="price-badge" Text=@($"{String.Format(new System.Globalization.CultureInfo("en-US"), "{0:C}", pledge.Amount)}") /></td>
-                    <td>@if (pledge.IsMatch) {<RadzenIcon Icon="check_circle" />} else {<RadzenIcon Icon="highlight_off" />}</td>
-                    <td>@if (pledge.IsMatch) {<RadzenIcon Icon="check_circle" />} else {<RadzenIcon Icon="highlight_off" />}</td>
-                    <td>@if (pledge.IsAnonymous) {<RadzenIcon Icon="check_circle" />} else {<RadzenIcon Icon="highlight_off" />}</td>
-                    <td>@if (pledge.CanShowApproval()) {<button class="btn btn-success" @onclick="(() => ApprovePledge(pledge.Identifier))">APPROVE</button>}</td>
-                    <td>@if (pledge.CanShowRejection()) {<button class="btn btn-danger" @onclick="(() => RejectPledge(pledge.Identifier))">REJECT</button>}</td>
-                    <td>@if (pledge.CanShowEmphasize()) {<button class="btn btn-warning" @onclick="(() => EmphasizePledge(pledge.Identifier))">EMPHASIZE</button>}</td>
-                </tr>
-            }
-        </tbody>
-    </table>
+<AuthorizeView Roles="Donor">
+    <Authorized>
+        <div class="row">
+            <div class="col-md-8">
+                <CampaignHeader 
+                    Campaign="@_selectedCampaign" 
+                    IsOrganizerView=false>
+                </CampaignHeader>
+            </div>
+            <div class="col-md-4"> 
+                <CampaignCommands
+                    Campaign="@_selectedCampaign"
+                    IsOrganizerView=false
+                    IsPublicView=false
+                    IsUserView=true>
+                </CampaignCommands>
+            </div>
+        </div>
 
-    <h5 class="mt-5 mb-4">Pending Match Pledges</h5>
+        @if (this._selectedCampaign.FulfilledPledges.Count > 0)
+        {
+            <h5 class="mt-5 mb-4">Latest @_selectedCampaign.LastItemsCount Fulfilled Pledges</h5>
 
-    <table class="table">
-        <thead>
-            <tr>
-                <th style="width:20%">USERNAME</th>
-                <th style="width:20%">NAME</th>
-                <th style="width:25%">PLEDGE TIME</th>
-                <th style="width:15%">MATCH AMOUNT</th>
-                <th style="width:15%">NOTE</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var match in _selectedCampaign.PendingMatchPledges)
-            {
-                <tr>
-                    <td>@match.UserName</td>
-                    <td>@match.Name</td>
-                    <td>@match.PledgeTime</td>
-                    <td>@match.Amount @_selectedCampaign.Currency</td>
-                    <td>@match.Note</td>
-                </tr>
-            }
-        </tbody>
-    </table>
+            <RadzenCard>
+                    @foreach (var pledge in _selectedCampaign.FulfilledPledges)
+                    {
+                        <PledgeTile 
+                            Campaign="@_selectedCampaign" 
+                            Pledge="@pledge" 
+                            IsCommands=false>
+                        </PledgeTile>
+                    }
+            </RadzenCard>
+        }
 
-    <h5 class="mt-5 mb-4">Top @_selectedCampaign.LastItemsCount Donors</h5>
+        @if (this._selectedCampaign.Donors.Count > 0)
+        {
+            <h5 class="mt-5 mb-4">Top @_selectedCampaign.LastItemsCount Donors</h5>
 
-    <table class="table">
-        <thead>
-            <tr>
-                <th style="width:20%">USERNAME</th>
-                <th style="width:50%">NAME</th>
-                <th style="width:15%">AMOUNT</th>
-                <th style="width:15%">% OF FUND</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var donor in _selectedCampaign.Donors)
-            {
-                <tr>
-                    <td>@donor.UserName</td>
-                    <td>@donor.Name</td>
-                    <td>@donor.Amount @donor.Currency</td>
-                    <td>@donor.PercentageOfTotalFund.ToString("P", CultureInfo.InvariantCulture)</td>
-                </tr>
-            }
-        </tbody>
-    </table>
+            <RadzenCard>
+                    @foreach (var donor in _selectedCampaign.Donors)
+                    {
+                        <DonorTile 
+                            Campaign="@_selectedCampaign" 
+                            Donor="@donor">
+                        </DonorTile>
+                    }
+            </RadzenCard>
+        }
+    </Authorized>
+    <NotAuthorized>
+        @* <RadzenCard>
+            <h3>Not Authorized</h3>
+            <p>You do not have permissions to view this area.</p>
+        </RadzenCard> *@
+    </NotAuthorized>
+</AuthorizeView>
 
-    <h5 class="mt-5 mb-4">Latest @_selectedCampaign.LastItemsCount Rejected Pledges</h5>
-
-    <table class="table">
-        <thead>
-            <tr>
-                <th style="width:20%">USERNAME</th>
-                <th style="width:50%">NAME</th>
-                <th style="width:15%">AMOUNT</th>
-                <th style="width:15%">% OF FUND</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var pledge in _selectedCampaign.RejectedPledges)
-            {
-                <tr>
-                    <td>@pledge.UserName</td>
-                    <td>@pledge.Name</td>
-                    <td>@pledge.Amount @pledge.Currency</td>
-                    <td>@pledge.PercentageOfTotalFund.ToString("P", CultureInfo.InvariantCulture)</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-
-    <h5 class="mt-5 mb-4">Latest @_selectedCampaign.LastItemsCount Errored Pledges</h5>
-
-    <table class="table">
-        <thead>
-            <tr>
-                <th style="width:20%">USERNAME</th>
-                <th style="width:50%">ERROR</th>
-                <th style="width:15%">AMOUNT</th>
-                <th style="width:15%">% OF FUND</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var pledge in _selectedCampaign.ErroredPledges)
-            {
-                <tr>
-                    <td>@pledge.UserName</td>
-                    <td>@pledge.Error</td>
-                    <td>@pledge.Amount @pledge.Currency</td>
-                    <td>@pledge.PercentageOfTotalFund.ToString("P", CultureInfo.InvariantCulture)</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-    }
 }
 
 @code {
-    private string updateConfirmation = "";
-    private string commandConfirmation = "";
-    private bool IsUserView = true;
-    private bool IsPublicView = false;
-    private bool IsOrganizerView = false;
-    private bool IsRegistered = false;
+    private bool _isUserView = false;
+    private bool _isPublicView = false;
+    private bool _isOrganizerView = true;
     private Campaign _selectedCampaign = new Campaign();
-    private HubConnection? _hubConnection;
-    private List<SimpleMessage> simpleMessages = new List<SimpleMessage>(); 
+    private HubConnection? _campaignHubConnection;
+    private HubConnection? _pledgeHubConnection;
+    private Pledge _emphasizedPledge = null;
+    private Timer _emphasisTimer = default!;
+    private dynamic _dlgResult = default;
  
     [Parameter] public string Id { get; set; } = default!;
-
-    private double MatchCompletionRatio 
-    {
-        get
-        {
-            if (_selectedCampaign != null && _selectedCampaign.ActiveMatchPledge != null && _selectedCampaign.ActiveMatchPledge .Amount > 0)
-            {
-                return _selectedCampaign.MatchFund / _selectedCampaign.ActiveMatchPledge .Amount;
-            }
-
-            return 0;
-        }
-    }
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            _selectedCampaign = await Http.GetFromJsonAsync<Campaign>($"function/campaigns/{Id}") ?? new Campaign();
+            _selectedCampaign = await _httpClient.GetFromJsonAsync<Campaign>($"function/campaigns/{Id}") ?? new Campaign();
 
-            _hubConnection = new HubConnectionBuilder()
-                .WithUrl(NavigationManager.ToAbsoluteUri("/campaignhub"))
+            _campaignHubConnection = new HubConnectionBuilder()
+                .WithUrl(_navigationManager.ToAbsoluteUri("/campaignhub"))
                 .Build();
 
-            _hubConnection.On<Campaign>("UpdateCampaign", (c) =>
+            _campaignHubConnection.On<Campaign>("UpdateCampaign", (c) =>
             {
-                //TODO: Ignore the ones that don't belong to me!!!
-                if (c.Identifier == _selectedCampaign.Identifier)
+                _selectedCampaign = c;
+                StateHasChanged();
+            });
+
+            await _campaignHubConnection.StartAsync();
+
+            _pledgeHubConnection = new HubConnectionBuilder()
+                .WithUrl(_navigationManager.ToAbsoluteUri("/pledgehub"))
+                .Build();
+
+            _pledgeHubConnection.On<Pledge>("EmphasizePledge", async (p) =>
+            {
+                //Ignore the ones that don't belong to me!!!
+                if (this._isPublicView &&
+                    p.CampaignIdentifier == _selectedCampaign.Identifier && 
+                    this._emphasizedPledge == null)
                 {
-                    _selectedCampaign = c;
-                    StateHasChanged();
+                    _emphasizedPledge = p;
+                    Console.WriteLine($"Received emphasized pledge {p.Identifier}"); 
+
+                    //Since we are running async, we can simply delay instead of timers
+                    await Task.Delay(_selectedCampaign.Behavior.EmphasisPledgeDialogStartup);
+
+                    //Restart the timer to run every minute
+                    if (_emphasisTimer is not null &&
+                        _emphasisTimer.Enabled) 
+                    {
+                        _emphasisTimer.Stop();
+                        _emphasisTimer.Dispose();
+                    }
+
+                    _emphasisTimer = new Timer(_selectedCampaign.Behavior.EmphasisPledgeDialogVisibility) { AutoReset = false };
+                    _emphasisTimer.Elapsed += TriggerRemoveEmphasis;
+                    _emphasisTimer.Start();
+
+                    _dlgResult = await _dialogService.OpenAsync<PledgeTile>($"Pledge Emphasis",
+                        new Dictionary<string, object>() { 
+                            { "Campaign", _selectedCampaign },
+                            { "Pledge", _emphasizedPledge },
+                            { "IsCommands", false }
+                        },
+                        new DialogOptions() { Width = "700px", Height = "400px", Resizable = true, Draggable = true }
+                    );
+                }
+                else 
+                {
+                    Console.WriteLine($"Ignoring Received emphasized pledge {p.Identifier}"); 
                 }
             });
 
-            await _hubConnection.StartAsync();
-
-            if (await _locaStorage.GetItemAsync<string>("token") == "pledge-manager")
-            {
-                IsRegistered = true;
-            }
+            await _pledgeHubConnection.StartAsync();
         }
         catch (HttpRequestException ex)
         {
@@ -372,157 +305,62 @@ else
         }
     }
 
-    private async Task ApprovePledge(String id)
-    {
-        try
-        {
-            this.commandConfirmation = "";
-            var command = new CampaignCommand();
-            command.CampaignIdentifier = _selectedCampaign.Identifier;
-            command.UserName = "2105551207"; //TODO: Organizer
-            command.Command = CampaignCommand.APPROVE_PLEDGE;
-            command.Arg1 = id;
-
-            var response = await Http.PostAsJsonAsync<CampaignCommand>($"function/campaigns/{_selectedCampaign.Identifier}/commands", command);
-            if (!response.IsSuccessStatusCode) 
-            {
-                throw new ApplicationException($"{response.StatusCode}-{response.ReasonPhrase}");
-            }
-
-            this.commandConfirmation = await response.Content.ReadAsStringAsync();
-        }
-        catch (HttpRequestException ex)
-        {
-            Console.WriteLine($"There was a problem commanding: {ex.Message}");
-        }
-    }
-
-    private async Task RejectPledge(string id)
-    {
-        try
-        {
-            this.commandConfirmation = "";
-            var command = new CampaignCommand();
-            command.CampaignIdentifier = _selectedCampaign.Identifier;
-            command.UserName = "2105551207"; //TODO: Organizer
-            command.Command = CampaignCommand.REJECT_PLEDGE;
-            command.Arg1 = id;
-
-            var response = await Http.PostAsJsonAsync<CampaignCommand>($"function/campaigns/{_selectedCampaign.Identifier}/commands", command);
-            if (!response.IsSuccessStatusCode) 
-            {
-                throw new ApplicationException($"{response.StatusCode}-{response.ReasonPhrase}");
-            }
-
-            this.commandConfirmation = await response.Content.ReadAsStringAsync();
-        }
-        catch (HttpRequestException ex)
-        {
-            Console.WriteLine($"There was a problem commanding: {ex.Message}");
-        }
-    }
-
-    private async Task EmphasizePledge(string id)
-    {
-        try
-        {
-            this.commandConfirmation = "";
-            var command = new CampaignCommand();
-            command.CampaignIdentifier = _selectedCampaign.Identifier;
-            command.UserName = "2105551207"; //TODO: Organizer
-            command.Command = CampaignCommand.REJECT_PLEDGE;
-            command.Arg1 = id;
-
-            var response = await Http.PostAsJsonAsync<CampaignCommand>($"function/campaigns/{_selectedCampaign.Identifier}/commands", command);
-            if (!response.IsSuccessStatusCode) 
-            {
-                throw new ApplicationException($"{response.StatusCode}-{response.ReasonPhrase}");
-            }
-
-            this.commandConfirmation = await response.Content.ReadAsStringAsync();
-        }
-        catch (HttpRequestException ex)
-        {
-            Console.WriteLine($"There was a problem commanding: {ex.Message}");
-        }
-    }
-
     public bool IsConnected =>
-        _hubConnection?.State == HubConnectionState.Connected;
+        _campaignHubConnection?.State == HubConnectionState.Connected;
 
     public async ValueTask DisposeAsync()
     {
-        if (_hubConnection is not null)
+        if (_campaignHubConnection is not null)
         {
-            await _hubConnection.DisposeAsync();
+            await _campaignHubConnection.DisposeAsync();
         }
+
+        if (_pledgeHubConnection is not null)
+        {
+            await _pledgeHubConnection.DisposeAsync();
+        }
+
+        if (_emphasisTimer is not null)
+        {
+            _emphasisTimer.Dispose();
+        }
+    }
+
+    private void TriggerRemoveEmphasis(object? sender, ElapsedEventArgs e)
+    {
+        Console.WriteLine($"TriggerRemoveEmphasis"); 
+        if (_emphasisTimer is not null)
+        {
+            _emphasisTimer.Dispose();
+        }
+
+        _dialogService.Close(_dlgResult);
+        _emphasizedPledge = null;
+    }
+
+    private async void TriggerMaintenance(object? sender, ElapsedEventArgs e)
+    {
+        Console.WriteLine($"TriggerMaintenance: {_selectedCampaign.Periods.Count}"); 
     }
 
     private void SwitchToPublicView()
     {
-        this.IsUserView = false;
-        this.IsPublicView = true;
-        this.IsOrganizerView = false;
+        this._isUserView = false;
+        this._isPublicView = true;
+        this._isOrganizerView = false;
     }
 
     private void SwitchToOrganizerView()
     {
-        this.IsUserView = false;
-        this.IsPublicView = false;
-        this.IsOrganizerView = true;
+        this._isUserView = false;
+        this._isPublicView = false;
+        this._isOrganizerView = true;
     }
 
     private void SwitchToUserView()
     {
-        this.IsUserView = true;
-        this.IsPublicView = false;
-        this.IsOrganizerView = false;
-    }
-
-    private async Task OpenRegistrationForm() 
-    {
-        await dialogService.OpenAsync<DonorRegistrationForm>($"Campaign {_selectedCampaign.Identifier}",
-            new Dictionary<string, object>() { 
-            },
-            new DialogOptions() { Width = "700px", Height = "530px", Resizable = true, Draggable = true }
-        );
-        Console.WriteLine($"Done with OpenRegistrationForm");
-
-        //TODO:
-        if (await _locaStorage.GetItemAsync<string>("token") == "pledge-manager")
-        {
-            IsRegistered = true;
-        }
-    }
-
-    private async Task OpenPledgeForm() 
-    {
-        await dialogService.OpenAsync<DonorPledgeForm>($"Campaign {_selectedCampaign.Identifier}",
-            new Dictionary<string, object>() { 
-                { "Id", _selectedCampaign.Identifier }
-            },
-            new DialogOptions() { Width = "700px", Height = "530px", Resizable = true, Draggable = true }
-        );
-        Console.WriteLine($"Done with OpenRegistrationForm");
-    }
-
-    private async Task OpenUpdateBehaviorForm() 
-    {
-        await dialogService.OpenAsync<CampaignUpdateForm>($"Campaign {_selectedCampaign.Identifier}",
-            new Dictionary<string, object>() { 
-                { "Id", _selectedCampaign.Identifier }
-            },
-            new DialogOptions() { Width = "700px", Height = "530px", Resizable = true, Draggable = true }
-        );
-        Console.WriteLine($"Done with OpenUpdateBehaviorForm");
-    }
-
-    private async Task OpenWorkInProgressDialog() 
-    {
-        var result = await dialogService.OpenAsync("Work in Progress", ds =>
-            @<div>
-                <p class="mb-4">We are working in it!</p>
-            </div>
-        );
+        this._isUserView = true;
+        this._isPublicView = false;
+        this._isOrganizerView = false;
     }
 }

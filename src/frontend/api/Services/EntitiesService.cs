@@ -14,17 +14,24 @@ namespace pledgemanager.frontend.api.Services
 {
     public class EntitiesService : IEntitiesService 
     {
-        private HttpClient _http;
+        private IHttpClientFactory _campaignsHttpFactory;
+        private IHttpClientFactory _usersHttpFactory;
+        private HttpClient _campaignsHttpClient;
+        private HttpClient _usersHttpClient;
         private ILogger<EntitiesService> _logger;
         private ISettingService _config;
 
-        public EntitiesService(HttpClient http, ILogger<EntitiesService> logger, ISettingService config) 
+        public EntitiesService(IHttpClientFactory campaignsHttp, IHttpClientFactory usersHttp, ILogger<EntitiesService> logger, ISettingService config) 
         {
-            _http = http;
+            _campaignsHttpFactory = campaignsHttp;
+            _campaignsHttpClient = _campaignsHttpFactory.CreateClient("campaignsbackend");
+            _usersHttpFactory = usersHttp;
+            _usersHttpClient = _campaignsHttpFactory.CreateClient("usersbackend");
             _logger = logger;
             _config = config;
 
-            _http.BaseAddress = new Uri(_config.GetBackendBaseUrl());
+            _campaignsHttpClient.BaseAddress = new Uri(_config.GetCampaignsBackendBaseUrl());
+            _usersHttpClient.BaseAddress = new Uri(_config.GetUsersBackendBaseUrl());
         }
         
         public async Task<List<Campaign>> GetCampaigns() 
@@ -34,7 +41,7 @@ namespace pledgemanager.frontend.api.Services
             request.Headers.Add("Accept", "application/json");
             _logger.LogInformation($"GetCampaigns = {request.RequestUri.ToString()}");
 
-            var response = await _http.SendAsync(request);
+            var response = await _campaignsHttpClient.SendAsync(request);
             if (!response.IsSuccessStatusCode) 
             {
                 throw new ApplicationException($"{response.StatusCode}-{response.ReasonPhrase}");
@@ -57,7 +64,7 @@ namespace pledgemanager.frontend.api.Services
             request.Headers.Add("Accept", "application/json");
             _logger.LogInformation($"GetCampaign = {request.RequestUri.ToString()}");
 
-            var response = await _http.SendAsync(request);
+            var response = await _campaignsHttpClient.SendAsync(request);
             if (!response.IsSuccessStatusCode) 
             {
                 throw new ApplicationException($"{response.StatusCode}-{response.ReasonPhrase}");
@@ -73,13 +80,36 @@ namespace pledgemanager.frontend.api.Services
             return campaign;
         }
 
+        public async Task<List<FundSinkPeriod>> GetCampaignPeriods(string id) 
+        {
+            var requestUri = $"/entities/campaigns/{id}/periods";
+            var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
+            request.Headers.Add("Accept", "application/json");
+            _logger.LogInformation($"GetCampaignPeriods = {request.RequestUri.ToString()}");
+
+            var response = await _campaignsHttpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode) 
+            {
+                throw new ApplicationException($"{response.StatusCode}-{response.ReasonPhrase}");
+            }
+
+            var periods = await response.Content.ReadFromJsonAsync<List<FundSinkPeriod>>();
+            if (periods == null) 
+            {
+                _logger.LogWarning($"GetCampaignPeriods/{id} returned no periods!!!");
+                return new List<FundSinkPeriod>();
+            }
+
+            return periods;
+        }
+
         public async Task<string> CommandCampaign(string campaignId, CampaignCommand command)
         {
             var requestUri = $"/entities/campaigns/{campaignId}/commands";
             var request = new HttpRequestMessage(HttpMethod.Put, requestUri);
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             request.Content = new StringContent(JsonConvert.SerializeObject(command), Encoding.UTF8, "application/json");
-            var response = await _http.SendAsync(request);
+            var response = await _campaignsHttpClient.SendAsync(request);
 
             if (response == null) 
             {
@@ -101,7 +131,7 @@ namespace pledgemanager.frontend.api.Services
             var request = new HttpRequestMessage(HttpMethod.Put, requestUri);
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             request.Content = new StringContent(JsonConvert.SerializeObject(campaign), Encoding.UTF8, "application/json");
-            var response = await _http.SendAsync(request);
+            var response = await _campaignsHttpClient.SendAsync(request);
 
             if (response == null) 
             {
@@ -123,7 +153,7 @@ namespace pledgemanager.frontend.api.Services
             var request = new HttpRequestMessage(HttpMethod.Post, requestUri);
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             request.Content = new StringContent(JsonConvert.SerializeObject(pledge), Encoding.UTF8, "application/json");
-            var response = await _http.SendAsync(request);
+            var response = await _campaignsHttpClient.SendAsync(request);
 
             if (response == null) 
             {
@@ -137,6 +167,42 @@ namespace pledgemanager.frontend.api.Services
 
             //return Guid.NewGuid().ToString();
             return await response.Content.ReadFromJsonAsync<string>();
+        }
+
+        public async Task RegisterUser(string userName)
+        {
+            var requestUri = $"/users/verifications/{userName}";
+            var request = new HttpRequestMessage(HttpMethod.Post, requestUri);
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            var response = await _usersHttpClient.SendAsync(request);
+
+            if (response == null) 
+            {
+                throw new ApplicationException($"Null response from API Endpoint!");
+            }
+
+            if (!response.IsSuccessStatusCode) 
+            {
+                throw new ApplicationException($"{response.StatusCode}-{response.ReasonPhrase}");
+            }
+        }
+
+        public async Task VerifyUser(string userName, string code)
+        {
+            var requestUri = $"/users/verifications/{userName}/{code}";
+            var request = new HttpRequestMessage(HttpMethod.Post, requestUri);
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            var response = await _usersHttpClient.SendAsync(request);
+
+            if (response == null) 
+            {
+                throw new ApplicationException($"Null response from API Endpoint!");
+            }
+
+            if (!response.IsSuccessStatusCode) 
+            {
+                throw new ApplicationException($"{response.StatusCode}-{response.ReasonPhrase}");
+            }
         }
     }
 }

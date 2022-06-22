@@ -11,9 +11,13 @@ namespace pledgemanager.frontend.api.Services
             _cfg = cfg;
         }
 
-        public string GetBackendBaseUrl()
+        public string GetCampaignsBackendBaseUrl()
         {
-            return _cfg.GetValue<string>("BackendBaseUrl");
+            return _cfg.GetValue<string>("CampaignsBackendBaseUrl");
+        }
+        public string GetUsersBackendBaseUrl()
+        {
+            return _cfg.GetValue<string>("UsersBackendBaseUrl");
         }
     }
 }
