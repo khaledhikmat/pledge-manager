@@ -33,7 +33,7 @@
     public string PeriodsTitle 
     {
         get {
-            return Campaign.PeriodType == FundSinkPeriodTypes.Minute ? "Minutes" : "Hours";
+            return Campaign.PeriodType == FundSinkPeriodTypes.Minute ? "Amount per Minute" : "Amount per Hour";
         }
     }
 
@@ -65,7 +65,6 @@
             }
 
             _campaignTimer = new Timer((Campaign.PeriodType == FundSinkPeriodTypes.Minute ? 60 : 3600) * 1000) { AutoReset = true };
-            //_campaignTimer = new Timer(10 * 1000) { AutoReset = true };
             _campaignTimer.Elapsed += TriggerMaintenance;
             _campaignTimer.Start();
         }
@@ -107,7 +106,7 @@
         for (int i = 0; i < lst.Count - 1; i++)
         {
             lst[i] = lst[i + 1];
-            lst[i].Period = $"{(lst.Count - 1) - i}";
+            lst[i].Period = $"-{(lst.Count - 1) - i}";
         }
 
         lst[lst.Count - 1] = new FundSinkPeriod() {Period = "0", Amount = 0, Count = 0};

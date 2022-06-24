@@ -22,7 +22,7 @@ builder.Services.AddHttpClient("usersbackend");
 
 // Add services to the container.
 builder.Services.AddSingleton<IConfiguration>(configuration);
-builder.Services.AddSingleton<SignalRAuthService>(_ => new SignalRAuthService("EEndpoint=https://my-service.service.signalr.net;"));
+builder.Services.AddSingleton<SignalRAuthService>(_ => new SignalRAuthService("Endpoint=https://my-service.service.signalr.net;"));
 builder.Services.AddSingleton<SignalRRestService>();
 builder.Services.AddSingleton<ISettingService, SettingService>();
 builder.Services.AddSingleton<IEntitiesService, EntitiesService>();

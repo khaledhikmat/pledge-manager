@@ -107,6 +107,8 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
             campaign.IsFeatured = update.IsFeatured;
             campaign.LastItemsCount = update.LastItemsCount;
             campaign.Goal = update.Goal;
+            campaign.PeriodsCount = update.PeriodsCount;
+            campaign.PeriodType = update.PeriodType;
 
             campaign.Behavior = update.Behavior;
 
@@ -734,10 +736,6 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
         }
 
         Logger.LogInformation($"CampaignActor - GetPledgePeriods total pledges: {pledges.Count()}");
-        var actualPledges2 = pledges.Where(p => 
-            p.PledgeTime >= past
-        ).ToList();
-        Logger.LogInformation($"CampaignActor - GetPledgePeriods last periods pledges: {actualPledges2.Count()}");
         
         var actualPeriods = pledges.Where(p => 
             p.PledgeTime >= past
@@ -759,7 +757,7 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
             return period;
         })
         .Select(g => new FundSinkPeriod { 
-            Period = $"{g.Key}", 
+            Period = g.Key == 0 ? $"{g.Key}" : $"-{g.Key}", 
             Amount = g.Sum(s => s.Amount), 
             Count = g.Count() 
             })
@@ -769,7 +767,7 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
         var allPeriods = new List<FundSinkPeriod>();
 		for (int i = 0; i < campaign.PeriodsCount; i++)
 		{
-			allPeriods.Add(new FundSinkPeriod{ Period = $"{i}", Amount = 0, Count = 0});
+			allPeriods.Add(new FundSinkPeriod{ Period = (i == 0 ? $"{i}" : $"-{i}"), Amount = 0, Count = 0});
 		}
 
 		//TODO: Use Linq Join Group
