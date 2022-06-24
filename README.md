@@ -29,7 +29,7 @@ The following are proposed microservices hosted in Azure Container Apps:
     - Processors Controller
     - Campaign Actors 
     - 3 Pub/Sub: Campaigns, Commands, Pledges (Redis)
-- users-camapigns:
+- pledgemanager-users:
     - Users Controller
     - User Actors 
 
@@ -118,7 +118,7 @@ cd src/frontend/api
 ```
 
 *Using a browser, access the frontend in a browser*
-[https://localhost:5000](https://localhost:5000)
+[https://localhost:7022](https://localhost:7022)
 
 ## Test Scenarios
 
