@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Dapr.Client;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 using pledgemanager.frontend.api.Services;
@@ -15,7 +16,6 @@ public class FunctionController : ControllerBase
     {
         "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
     };
-
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly SignalRRestService _signalRService;
     private readonly IEntitiesService _entitiesService;
@@ -95,6 +95,7 @@ public class FunctionController : ControllerBase
         }
     }
 
+    [Authorize]
     [Route("campaigns/{id}/pledges")]
     [HttpPost()]
     public async Task<ActionResult> PledgeCampaign(string id, [FromBody] Pledge pledge)
@@ -105,7 +106,7 @@ public class FunctionController : ControllerBase
         }
         catch (Exception e)
         {
-            _logger.LogError($"PledgeCampaign - Exception: " + e.Message);
+            _logger.LogError($"PledgeCampaign - Exception: {e.Message} - {e.InnerException}");
             return StatusCode(500);
         }
     }

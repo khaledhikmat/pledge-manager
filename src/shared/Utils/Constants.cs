@@ -2,6 +2,10 @@ namespace pledgemanager.shared.Utils;
 
 public class Constants
 {
+    public const string DAPR_CAMPAIGNS_APP_NAME = "pledgemanager-campaigns";
+    public const string DAPR_USERS_APP_NAME = "pledgemanager-users";
+    public const string DAPR_FUNCTIONS_APP_NAME = "pledgemanager-functions";
+
     public const string DAPR_CAMPAIGNS_STORE_NAME = "campaigns-statestore";
     public const string DAPR_CAMPAIGNS_PUBSUB_NAME = "campaigns-pubsub";
     public const string DAPR_PLEDGES_PUBSUB_TOPIC_NAME = "pledges";

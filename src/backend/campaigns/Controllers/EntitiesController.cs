@@ -212,7 +212,7 @@ public class EntitiesController : ControllerBase
             var actorId = new ActorId(id);
             var proxy = ActorProxy.Create<ICampaignActor>(actorId, nameof(CampaignActor));
             await proxy.Update(campaign);
-            return Ok("something");
+            return Ok(new ConfirmationResponse() {Confirmation = "Success", Error = ""});
         }
         catch (Exception e)
         {
@@ -241,7 +241,7 @@ public class EntitiesController : ControllerBase
 
             //Validate pledge username using the users microservice
             //The users microervice might respond with a 401 to indicate non-valid
-            await daprClient.InvokeMethodAsync("pledgemanager-users", $"users/verifications/{command.UserName}");    
+            await daprClient.InvokeMethodAsync(Constants.DAPR_USERS_APP_NAME, $"users/verifications/{command.UserName}");    
 
             var stateEntry = await daprClient.GetStateEntryAsync<Campaign>(Constants.DAPR_CAMPAIGNS_STORE_NAME, id);
             if (stateEntry == null || stateEntry.Value == null)
@@ -253,7 +253,7 @@ public class EntitiesController : ControllerBase
             command.CampaignIdentifier = campaign.Identifier;
             _logger.LogInformation($"CommandCampaignAsync - {command.Identifier}");
             await daprClient.PublishEventAsync(Constants.DAPR_CAMPAIGNS_PUBSUB_NAME, Constants.DAPR_COMMANDS_PUBSUB_TOPIC_NAME, command);
-            return Ok(command.Confirmation);
+            return Ok(new ConfirmationResponse() {Confirmation = command.Confirmation, Error = ""});
         }
         catch (Exception e)
         {
@@ -282,7 +282,7 @@ public class EntitiesController : ControllerBase
 
             //Validate pledge username using the users microservice
             //The users microervice might respond with a 401 to indicate non-valid
-            await daprClient.InvokeMethodAsync("pledgemanager-users", $"users/verifications/{pledge.UserName}");    
+            await daprClient.InvokeMethodAsync(Constants.DAPR_USERS_APP_NAME, $"users/verifications/{pledge.UserName}");    
 
             var stateEntry = await daprClient.GetStateEntryAsync<Campaign>(Constants.DAPR_CAMPAIGNS_STORE_NAME, id);
             if (stateEntry == null || stateEntry.Value == null)
@@ -311,7 +311,7 @@ public class EntitiesController : ControllerBase
             pledge.CampaignIdentifier = campaign.Identifier;
             _logger.LogInformation($"SubmitPledgeAsync - {pledge.Identifier}");
             await daprClient.PublishEventAsync(Constants.DAPR_CAMPAIGNS_PUBSUB_NAME, Constants.DAPR_PLEDGES_PUBSUB_TOPIC_NAME, pledge);
-            return Ok(pledge.Confirmation);
+            return Ok(new ConfirmationResponse() {Confirmation = pledge.Confirmation, Error = ""});
         }
         catch (Exception e)
         {

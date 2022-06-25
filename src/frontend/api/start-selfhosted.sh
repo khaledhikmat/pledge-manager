@@ -1,0 +1,1 @@
+dapr run --app-id=pledgemanager-functions --app-port=6002 --dapr-http-port=3602 --dapr-grpc-port=60002 --config=../../backend/dapr/config/config.yaml --components-path=../../backend/dapr/components dotnet run

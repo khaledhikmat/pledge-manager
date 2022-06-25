@@ -738,7 +738,8 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
         Logger.LogInformation($"CampaignActor - GetPledgePeriods total pledges: {pledges.Count()}");
         
         var actualPeriods = pledges.Where(p => 
-            p.PledgeTime >= past
+            p.PledgeTime >= past && 
+            p.FulfilledTime != null
         )
         .GroupBy(p =>
         {

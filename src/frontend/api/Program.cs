@@ -11,8 +11,8 @@ var configuration = builder.Configuration;
 //Register an HTTP client to access signalr REST APIs directly
 builder.Services.AddHttpClient("signalr");
 
-//TODO: Once we daperize this API, there will be no need to do this
-//We can use the dapr client directly
+//WARNING: The http factories are no longer needed since we r using DAPR.
+//They are kept for refernce
 
 //Register an HTTP client to access the campaigns backend APIs directly
 builder.Services.AddHttpClient("campaignbackend");
@@ -42,6 +42,14 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     };
 });
 
+var daprHttpPort = Environment.GetEnvironmentVariable("DAPR_HTTP_PORT") ?? "3602";
+var daprGrpcPort = Environment.GetEnvironmentVariable("DAPR_GRPC_PORT") ?? "60002";
+builder.Services.AddDaprClient(builder => builder
+    .UseHttpEndpoint($"http://localhost:{daprHttpPort}")
+    .UseGrpcEndpoint($"http://localhost:{daprGrpcPort}"));
+
+
+//builder.Services.AddDaprClient();
 builder.Services.AddSignalR().AddAzureSignalR();
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
@@ -63,10 +71,10 @@ else
 {
     app.UseExceptionHandler("/Error");
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-    app.UseHsts();
+    //app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
 app.UseBlazorFrameworkFiles();
 app.UseStaticFiles();
@@ -83,4 +91,6 @@ app.MapHub<CampaignHub>("/campaignhub");
 app.MapHub<PledgeHub>("/pledgehub");
 app.MapFallbackToFile("index.html");
 
-app.Run();
+//app.Run();
+//Start
+app.Run("http://0.0.0.0:6002");
