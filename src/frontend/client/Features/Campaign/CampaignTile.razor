@@ -22,7 +22,7 @@
             Goal
         </div>
         <div class="col-md-6">
-            <b>@String.Format(new System.Globalization.CultureInfo("en-US"), "{0:C}", Campaign.Goal)</b>
+            <b>@Utilities.FormatAsUSD(Campaign.Goal)</b>
         </div>
     </div>
     <div class="row">
@@ -30,7 +30,7 @@
             Current Fund
         </div>
         <div class="col-md-6">
-            <b>@String.Format(new System.Globalization.CultureInfo("en-US"), "{0:C}", Campaign.Fund)</b>
+            <b>@Utilities.FormatAsUSD(Campaign.Fund)</b>
         </div>
     </div>
     <br>

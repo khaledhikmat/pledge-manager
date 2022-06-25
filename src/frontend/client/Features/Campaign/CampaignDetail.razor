@@ -1,8 +1,6 @@
 @page "/campaign/{Id}"
 @attribute [Authorize]
 
-@using System.Globalization
-@using BlazorComponentBus
 @using System.Timers
 @using Microsoft.AspNetCore.SignalR.Client
 @inject NavigationManager _navigationManager
@@ -25,7 +23,6 @@
 }
 else
 {
-
 <AuthorizeView Roles="Organizer">
     <Authorized>
         <div class="form-group">
@@ -49,46 +46,128 @@ else
         else if (this._isPublicView)
         {
         <div class="row">
-            <div class="col-md-12">
-                <CampaignPledgesChart
-                    Campaign="@_selectedCampaign">
-                </CampaignPledgesChart>
+            <div class="col-md-4">
+            <CampaignHeader 
+                Campaign="@_selectedCampaign" 
+                IsOrganizerView="@_isOrganizerView">
+            </CampaignHeader>
+            </div>
+            <div class="col-md-4">
+            <CampaignGoal 
+                Campaign="@_selectedCampaign">
+            </CampaignGoal>
+            </div>
+            <div class="col-md-4">
+            <CampaignCommands
+                Campaign="@_selectedCampaign"
+                IsOrganizerView="@_isOrganizerView"
+                IsPublicView="@_isPublicView"
+                IsUserView="@_isUserView">
+            </CampaignCommands>
             </div>
         </div>
         <br>
         }
 
         <div class="row">
-            <div class="col-md-8">
-                <CampaignHeader 
-                    Campaign="@_selectedCampaign" 
-                    IsOrganizerView="@_isOrganizerView">
-                </CampaignHeader>
-            </div>
             <div class="col-md-4"> 
-                <CampaignCommands
-                    Campaign="@_selectedCampaign"
-                    IsOrganizerView="@_isOrganizerView"
-                    IsPublicView="@_isPublicView"
-                    IsUserView="@_isUserView">
-                </CampaignCommands>
+                @if (!this._isPublicView)
+                {
+                    <CampaignHeader 
+                        Campaign="@_selectedCampaign" 
+                        IsOrganizerView="@_isOrganizerView">
+                    </CampaignHeader>
+                    <CampaignGoal 
+                        Campaign="@_selectedCampaign">
+                    </CampaignGoal>
+                    <CampaignCommands
+                        Campaign="@_selectedCampaign"
+                        IsOrganizerView="@_isOrganizerView"
+                        IsPublicView="@_isPublicView"
+                        IsUserView="@_isUserView">
+                    </CampaignCommands>
+                }
+
+                @if (this._isOrganizerView)
+                {
+                    <RadzenCard>
+                        <h5>Top @_selectedCampaign.LastItemsCount Donors</h5>
+                        @if (this._selectedCampaign.Donors.Count > 0)
+                        {
+                            @foreach (var donor in _selectedCampaign.Donors)
+                            {
+                                <DonorTile 
+                                    Campaign="@_selectedCampaign" 
+                                    Donor="@donor">
+                                </DonorTile>
+                            }
+                        }
+                    </RadzenCard>
+                }
+            </div>
+            <div class="col-md-8">
+                @if (this._isOrganizerView)
+                {
+                    <RadzenCard>
+                        <h5>All Pledges</h5>
+                        @if (this._selectedCampaign.AllPledges.Count > 0)
+                        {
+                            @foreach (var pledge in _selectedCampaign.AllPledges)
+                            {
+                                <PledgeTile 
+                                    Campaign="@_selectedCampaign" 
+                                    Pledge="@pledge" 
+                                    IsCommands="@_isOrganizerView">
+                                </PledgeTile>
+                            }
+                        }
+                    </RadzenCard>
+                }
+                else if (this._isUserView)
+                {
+                    <RadzenCard>
+                        <h5>Fulfilled Pledges</h5>
+                        @if (this._selectedCampaign.FulfilledPledges.Count > 0)
+                        {
+                            @foreach (var pledge in this._selectedCampaign.FulfilledPledges)
+                            {
+                                <PledgeTile 
+                                    Campaign="@_selectedCampaign" 
+                                    Pledge="@pledge" 
+                                    IsCommands=false>
+                                </PledgeTile>
+                            }
+                        }
+                    </RadzenCard>
+                }
             </div>
         </div>
 
-        @if (this._isOrganizerView && this._selectedCampaign.AllPledges.Count > 0)
+        @if (this._isPublicView)
         {
-            <h5 class="mt-5 mb-4">All Pledges</h5>
-
-            <RadzenCard>
-                    @foreach (var pledge in _selectedCampaign.AllPledges)
+        <div class="row">
+            <div class="col-md-6">
+                <RadzenCard>
+                    <h5>Fulfilled Pledges</h5>
+                    @if (this._selectedCampaign.FulfilledPledges.Count > 0)
                     {
-                        <PledgeTile 
-                            Campaign="@_selectedCampaign" 
-                            Pledge="@pledge" 
-                            IsCommands=true>
-                        </PledgeTile>
+                        @foreach (var pledge in this._selectedCampaign.FulfilledPledges)
+                        {
+                            <PledgeTile 
+                                Campaign="@_selectedCampaign" 
+                                Pledge="@pledge" 
+                                IsCommands=false>
+                            </PledgeTile>
+                        }
                     }
-            </RadzenCard>
+                </RadzenCard>
+            </div>
+            <div class="col-md-6"> 
+                <CampaignPledgesChart
+                    Campaign="@_selectedCampaign">
+                </CampaignPledgesChart>
+            </div>
+        </div>
         }
 
         @if (this._isOrganizerView && this._selectedCampaign.PendingMatchPledges.Count > 0)
@@ -103,21 +182,6 @@ else
                             Pledge="@pledge" 
                             IsCommands=false>
                         </PledgeTile>
-                    }
-            </RadzenCard>
-        }
-
-        @if (this._isOrganizerView && this._selectedCampaign.Donors.Count > 0)
-        {
-            <h5 class="mt-5 mb-4">Top @_selectedCampaign.LastItemsCount Donors</h5>
-
-            <RadzenCard>
-                    @foreach (var donor in _selectedCampaign.Donors)
-                    {
-                        <DonorTile 
-                            Campaign="@_selectedCampaign" 
-                            Donor="@donor">
-                        </DonorTile>
                     }
             </RadzenCard>
         }
@@ -219,7 +283,6 @@ else
         </RadzenCard> *@
     </NotAuthorized>
 </AuthorizeView>
-
 }
 
 @code {
@@ -288,7 +351,7 @@ else
                             { "Pledge", _emphasizedPledge },
                             { "IsCommands", false }
                         },
-                        new DialogOptions() { Width = "700px", Height = "400px", Resizable = true, Draggable = true }
+                        new DialogOptions() { Width = "700px", Height = "200px", Resizable = true, Draggable = true }
                     );
                 }
                 else 

@@ -1,0 +1,56 @@
+@using System.Globalization
+
+<RadzenCard>
+    <div class="row">
+        <div class="col-md-12">
+            <RadzenArcGauge Style="width: 100%; height: 250px;">
+                <RadzenArcGaugeScale Step="@AdjustedStep" Min="0" Max="@Campaign.Goal" MinorStep="@AdjustedMinorStep" Radius="1.5" TickPosition=@_tickPosition Y="0.9" Margin="0">
+                    <RadzenArcGaugeScaleValue Value=@AdjustedFund ShowValue=@_showValue>
+                        <Template Context="pointer">
+                            <h4>
+                                @Utilities.FormatAsUSD(pointer.Value)
+                            </h4>
+                        </Template>
+                    </RadzenArcGaugeScaleValue>
+                </RadzenArcGaugeScale>
+            </RadzenArcGauge>
+        </div>
+    </div>
+</RadzenCard>
+
+@code {
+    [Parameter] 
+    public Campaign Campaign { get; set; } = default!;
+
+    bool _showValue = true;
+    IEnumerable<GaugeTickPosition> tickPositions = Enum.GetValues(typeof(GaugeTickPosition)).Cast<GaugeTickPosition>();
+    GaugeTickPosition _tickPosition = GaugeTickPosition.Outside;    
+    
+    public double AdjustedFund 
+    {
+        get {
+            if (Campaign.Fund >= Campaign.Goal)
+            {
+                return Campaign.Goal;
+            }
+            else 
+            {
+                return Campaign.Fund;
+            }
+        }
+    }
+
+    public double AdjustedStep 
+    {
+        get {
+            return Campaign.Goal / 10;
+        }
+    }
+
+    public double AdjustedMinorStep 
+    {
+        get {
+            return Campaign.Goal / 20;
+        }
+    }
+}

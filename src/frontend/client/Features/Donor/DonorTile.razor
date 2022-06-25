@@ -3,21 +3,14 @@
 
 <RadzenCard>
     <div class="row">
-        <div class="col-md-4">
-            <div>UserName</div>
-            <b>@Donor.UserName</b>
-            <div class="mt-3">Name</div>
-            <b>@Donor.Name</b>
+        <div class="col-md-6">
+            <div><b>@Donor.UserName @if(Donor.UserName != Donor.Name) {<br><span>@Donor.Name</span>}</b></div>
         </div>
-        <div class="col-md-4">
-            <div>Amount</div>
-            <b><RadzenBadge BadgeStyle="BadgeStyle.Secondary" Class="price-badge" Text=@($"{String.Format(new System.Globalization.CultureInfo("en-US"), "{0:C}", Donor.Amount)}")></RadzenBadge></b>
-            <div class="mt-3">% of Fund</div>
-            <b>@Donor.PercentageOfTotalFund.ToString("P", CultureInfo.InvariantCulture)</b>
+        <div class="col-md-3">
+            <div><b><RadzenBadge BadgeStyle="BadgeStyle.Secondary" Class="price-badge" Text=@($"{Utilities.FormatAsUSD(Donor.Amount)}")></RadzenBadge></b></div>
         </div>
-        <div class="col-md-4">
-            <div>Total Pledges</div>
-            <b>@Donor.PledgesCount</b>
+        <div class="col-md-3">
+            <div><b>@Donor.PledgesCount</b></div>
         </div>
     </div>
 </RadzenCard>

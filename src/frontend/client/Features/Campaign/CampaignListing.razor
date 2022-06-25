@@ -62,11 +62,12 @@ else
                 c.Institution.Contains(message.SearchKey, StringComparison.CurrentCultureIgnoreCase)
                 ).ToList();
             Console.WriteLine($"Received 2");
-            StateHasChanged();
         }
         else
         {
             _searchResults = new List<Campaign>();
         }
+
+        StateHasChanged();
     }
 }
