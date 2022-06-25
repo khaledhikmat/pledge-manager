@@ -250,19 +250,19 @@ if (command == "create")
     Console.WriteLine("Creating institutions....");
     foreach (Institution institution in institutions)
     {
-        await daprClient.InvokeMethodAsync<Institution>("pledgemanager-campaigns", $"entities/institutions", institution);    
+        await daprClient.InvokeMethodAsync<Institution>(Constants.DAPR_CAMPAIGNS_APP_NAME, $"entities/institutions", institution);    
     }
 
     Console.WriteLine("Creating users....");
     foreach (User user in users)
     {
-        await daprClient.InvokeMethodAsync<User>("pledgemanager-users", $"users", user);    
+        await daprClient.InvokeMethodAsync<User>(Constants.DAPR_USERS_APP_NAME, $"users", user);    
     }
 
     Console.WriteLine("Creating campaigns....");
     foreach (Campaign campaign in campaigns)
     {
-        await daprClient.InvokeMethodAsync<Campaign>("pledgemanager-campaigns", $"entities/campaigns", campaign);    
+        await daprClient.InvokeMethodAsync<Campaign>(Constants.DAPR_CAMPAIGNS_APP_NAME, $"entities/campaigns", campaign);    
     }
 }
 else if (command == "simulatedonors")
@@ -275,9 +275,9 @@ else if (command == "simulatedonors")
         {
             Console.WriteLine($"Simulating {donor.UserName} ....");
             // Generate a verification request
-            await daprClient.InvokeMethodAsync("pledgemanager-users", $"users/verifications/{donor.UserName}");    
+            await daprClient.InvokeMethodAsync(Constants.DAPR_USERS_APP_NAME, $"users/verifications/{donor.UserName}");    
             // Respond with code (for now temp)
-            await daprClient.InvokeMethodAsync("pledgemanager-users", $"users/verifications/{donor.UserName}/{code}");    
+            await daprClient.InvokeMethodAsync(Constants.DAPR_USERS_APP_NAME, $"users/verifications/{donor.UserName}/{code}");    
         }
         catch (Exception e)
         {
@@ -319,7 +319,7 @@ else if (command == "simulatepledges")
             pledge.Amount = Random.Shared.Next(100, 5000);
             pledge.Currency = "USD";
             pledge.UserName = donors[Random.Shared.Next(donors.Count)].UserName;
-            await daprClient.InvokeMethodAsync<Pledge>("pledgemanager-campaigns", $"entities/campaigns/{campaign.Identifier}/pledges", pledge);    
+            await daprClient.InvokeMethodAsync<Pledge>(Constants.DAPR_CAMPAIGNS_APP_NAME, $"entities/campaigns/{campaign.Identifier}/pledges", pledge);    
         }
         catch (Exception e) 
         {
