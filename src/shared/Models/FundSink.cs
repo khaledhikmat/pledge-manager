@@ -14,7 +14,7 @@ public class FundSink
     public int ChildrenCount { get; set; } = 0;
     public int FulfilledPledgesCount { get; set; } = 0;
     public int DonorsCount { get; set; } = 0;
-    public int PeriodsCount { get; set; } = 30;
+    public int PeriodsCount { get; set; } = 10;
     public FundSinkPeriodTypes PeriodType { get; set; } = FundSinkPeriodTypes.Minute;
     public List<FundSinkPeriod> Periods { get; set; } = new();
 }

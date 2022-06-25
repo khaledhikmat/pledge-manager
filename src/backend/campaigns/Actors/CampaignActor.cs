@@ -738,24 +738,12 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
         Logger.LogInformation($"CampaignActor - GetPledgePeriods total pledges: {pledges.Count()}");
         
         var actualPeriods = pledges.Where(p => 
-            p.PledgeTime >= past && 
-            p.FulfilledTime != null
+            p.FulfilledTime != null &&
+            p.FulfilledTime >= past
         )
         .GroupBy(p =>
         {
-            TimeSpan ts = now - p.PledgeTime;
-            int period = 0;
-
-            if (campaign.PeriodType == FundSinkPeriodTypes.Minute)
-            {
-                period = (int)ts.TotalMinutes;
-            }
-            else
-            {
-                period = (int)ts.TotalHours;
-            }
-
-            return period;
+            return GetTimeDiff(now, (DateTime)p.FulfilledTime, campaign.PeriodType);
         })
         .Select(g => new FundSinkPeriod { 
             Period = g.Key == 0 ? $"{g.Key}" : $"-{g.Key}", 
@@ -787,5 +775,24 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
         allPeriods.Reverse();
 
         return allPeriods;
+    }
+
+    private int GetTimeDiff(DateTime t1, DateTime t2, FundSinkPeriodTypes type)
+    {
+        var period = 0;
+        var t11 = new DateTime(t1.Year, t1.Month, t1.Day, t1.Hour, t1.Minute, 0);
+        var t22 = new DateTime(t2.Year, t2.Month, t2.Day, t2.Hour, t2.Minute, 0);
+        TimeSpan ts = t11 - t22;
+
+        if (type == FundSinkPeriodTypes.Minute)
+        {
+            period = (int)ts.TotalMinutes;
+        }
+        else
+        {
+            period = (int)ts.TotalHours;
+        }
+
+        return period;
     }
 }

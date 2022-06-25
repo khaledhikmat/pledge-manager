@@ -1,32 +1,48 @@
 @using System.Globalization
 
 <RadzenCard>
-    <h3 class="h5">Campaign Match & Deferred Information</h3>
+    <div class="row">
+        <div class="col-md-11">
+        </div>
+        <div class="col-md-1">
+            <span class="float-right"><RadzenSwitch @bind-Value=@_fullMode Change=@(args => OnChange(args, "Mode")) Name="Mode" /></span>
+        </div>
+    </div>
+
     <div class="row">
         <div class="col-md-4">
             <div>Active Match Fund/Goal</div>
-            <b>@String.Format(new System.Globalization.CultureInfo("en-US"), "{0:C}", MatchCompletedAmount) / @String.Format(new System.Globalization.CultureInfo("en-US"), "{0:C}", MatchFullAmount)</b>
-            <div class="mt-3">Active Match Progress</div>
-            @if (IsActiveMatch) 
+            <b>@Utilities.FormatAsUSD(MatchCompletedAmount) / @Utilities.FormatAsUSD(MatchFullAmount)</b>
+            @if (_fullMode)
             {
-                <RadzenProgressBar ProgressBarStyle="ProgressBarStyle.Primary" ShowValue="false" Value="@MatchCompletedAmount" Max="@MatchFullAmount" />
-            }
-            else
-            {
-                <span>No active match</span>                
+                <div class="mt-3">Active Match Progress</div>
+                @if (IsActiveMatch) 
+                {
+                    <RadzenProgressBar ProgressBarStyle="ProgressBarStyle.Primary" ShowValue="false" Value="@MatchCompletedAmount" Max="@MatchFullAmount" />
+                }
+                else
+                {
+                    <span>No active match</span>                
+                }
             }
         </div>
         <div class="col-md-4">
             <div>Pending Match Pledges</div>
             <b>@Campaign.PendingMatchPledgesCount</b>
-            <div class="mt-3">Pending Match Pledges Amount</div>
-            <b>@String.Format(new System.Globalization.CultureInfo("en-US"), "{0:C}", Campaign.PendingMatchPledgesAmount)</b>
+            @if (_fullMode)
+            {
+                <div class="mt-3">Pending Match Pledges Amount</div>
+                <b>@Utilities.FormatAsUSD(Campaign.PendingMatchPledgesAmount)</b>
+            }
         </div>
         <div class="col-md-4">
             <div>Pending Deferred Pledges</div>
             <b>@Campaign.PendingDeferredPledgesCount</b>
-            <div class="mt-3">Pending Deferred Pledges Amount</div>
-            <b>@String.Format(new System.Globalization.CultureInfo("en-US"), "{0:C}", Campaign.PendingDeferredPledgesAmount)</b>
+            @if (_fullMode)
+            {
+                <div class="mt-3">Pending Deferred Pledges Amount</div>
+                <b>@Utilities.FormatAsUSD(Campaign.PendingDeferredPledgesAmount)</b>
+            }
         </div>
     </div>
 </RadzenCard>
@@ -39,7 +55,7 @@
     {
         get
         {
-            if (Campaign != null && Campaign.ActiveMatchPledge != null && Campaign.ActiveMatchPledge .Amount > 0)
+            if (Campaign != null && Campaign.ActiveMatchPledge != null && Campaign.ActiveMatchPledge.Amount > 0)
             {
                 return Campaign.MatchFund / Campaign.ActiveMatchPledge.Amount;
             }
@@ -60,7 +76,7 @@
     {
         get
         {
-            if (Campaign != null && Campaign.ActiveMatchPledge != null && Campaign.ActiveMatchPledge .Amount > 0)
+            if (Campaign != null && Campaign.ActiveMatchPledge != null && Campaign.ActiveMatchPledge.Amount > 0)
             {
                 return Campaign.ActiveMatchPledge.Amount;
             }
@@ -72,12 +88,19 @@
     {
         get
         {
-            if (Campaign != null && Campaign.ActiveMatchPledge != null && Campaign.ActiveMatchPledge .Amount > 0)
+            if (Campaign != null && Campaign.ActiveMatchPledge != null && Campaign.ActiveMatchPledge.Amount > 0)
             {
                 return true;
             }
 
             return false;
         }
+    }
+
+    private bool _fullMode = false;
+
+    void OnChange(bool? value, string name)
+    {
+        Console.WriteLine($"{name} value changed to {value} - {_fullMode}");
     }
 }

@@ -4,39 +4,31 @@
 
 <RadzenCard>
     <div class="row">
-        <div class="col-md-4">
-            <div>Donor</div>
-            <b>@Pledge.UserName (@Pledge.Name)</b>
-            <div class="mt-3">Amount</div>
-            <b><RadzenBadge BadgeStyle="BadgeStyle.Secondary" Class="price-badge" Text=@($"{String.Format(new System.Globalization.CultureInfo("en-US"), "{0:C}", Pledge.Amount)}")></RadzenBadge></b>
-            <div class="mt-3">% of Fund</div>
-            <b>@Pledge.PercentageOfTotalFund.ToString("P", CultureInfo.InvariantCulture)</b>
+        <div class="@ColumnSize">
+            <div><b>@if (!Pledge.IsAnonymous) {@Pledge.UserName @if (!string.IsNullOrEmpty(Pledge.Name)){<br><span>&nbsp;@Pledge.Name</span>}} else {<span>Anonymous</span>}</b></div>
         </div>
-        <div class="col-md-4">
-            <div>Pledge Time</div>
-            <b>@Pledge.PledgeTime.ToString("dddd, dd MMMM yyyy HH:mm:ss")</b>
-            <div class="mt-3">Approved Time</div>
-            <b>@if (Pledge.ApprovedTime != null) {<span>@Pledge.ApprovedTime?.ToString("dddd, dd MMMM yyyy HH:mm:ss")</span>} else {<span>N/A</span>}</b>
-            <div class="mt-3">FulfilledTime</div>
-            <b>@if (Pledge.FulfilledTime != null) {<span>@Pledge.FulfilledTime?.ToString("dddd, dd MMMM yyyy HH:mm:ss")</span>} else {<span>N/A</span>}</b>
+        <div class="@ColumnSize">
+            <div><b><RadzenBadge BadgeStyle="BadgeStyle.Secondary" Class="price-badge" Text=@($"{Utilities.FormatAsUSD(Pledge.Amount)}")></RadzenBadge></b></div>
         </div>
-        <div class="col-md-2">
-            <div>Anonymous</div>
-            <b>@if (Pledge.IsAnonymous) {<RadzenIcon Icon="check_circle" />} else {<RadzenIcon Icon="highlight_off" />}</b>
-            <div class="mt-3">Match</div>
-            <b>@if (Pledge.IsMatch) {<RadzenIcon Icon="check_circle" />} else {<RadzenIcon Icon="highlight_off" />}</b>
-            <div class="mt-3">Deferred</div>
-            <b>@if (Pledge.IsDeferred) {<RadzenIcon Icon="check_circle" />} else {<RadzenIcon Icon="highlight_off" />}</b>
+        <div class="@ColumnSize">
+            <div><b>@if (Pledge.IsMatch) {<span>Match</span>} else if (Pledge.IsDeferred) {<span>Match</span>} else {<span>Normal</span>}</b></div>
         </div>
         @if (IsCommands)
         {
-            <div class="col-md-2">
-                <div></div>
-                @if (Pledge.CanShowApproval()) {<span class="mr-2"><button class="btn btn-success w-100" @onclick="(() => ApprovePledge())">APPROVE</button></span>} else {<span></span>}
-                <div class="mt-3"></div>
-                @if (Pledge.CanShowRejection()) {<span class="mr-2"><button class="btn btn-danger w-100" @onclick="(() => RejectPledge())">REJECT</button></span>} else {<span></span>}
-                <div class="mt-3"></div>
-                @if (Pledge.CanShowEmphasize()) {<span class="mr-2"><button class="btn btn-warning w-100" @onclick="(() => EmphasizePledge())">EMPHASIZE</button></span>} else {<span></span>}
+            <div class="@ColumnSize">
+                <div>
+                    @if (Pledge.CanShowApproval()) {<span class="mr-2"><button class="btn btn-success w-100" @onclick="(() => ApprovePledge())">APPROVE</button></span>} else {<span></span>}
+                </div>
+            </div>
+            <div class="@ColumnSize">
+                <div>
+                    @if (Pledge.CanShowRejection()) {<span class="mr-2"><button class="btn btn-danger w-100" @onclick="(() => RejectPledge())">REJECT</button></span>} else {<span></span>}
+                </div>
+            </div>
+            <div class="@ColumnSize">
+                <div>
+                    @if (Pledge.CanShowEmphasize()) {<span class="mr-2"><button class="btn btn-warning w-100" @onclick="(() => EmphasizePledge())">PROJECT</button></span>} else {<span></span>}
+                </div>
             </div>
         }
     </div>
@@ -53,6 +45,13 @@
     public bool IsCommands { get; set; } = false!;
 
     private string _commandConfirmation = "";
+
+    public string ColumnSize 
+    {
+        get {
+            return IsCommands ? "col-md-2" : "col-md-4";
+        }
+    }
 
     private async Task ApprovePledge()
     {
