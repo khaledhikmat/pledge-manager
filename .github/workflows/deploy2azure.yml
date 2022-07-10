@@ -27,7 +27,7 @@ jobs:
         run: |
           docker image build ./src --file ./src/Dockerfile-backend-campaigns --tag $DOCKER_REPOSITORY/pledgemanager-be-campaigns:$IMAGE_TAG 
           docker image build ./src --file ./src/Dockerfile-backend-users --tag $DOCKER_REPOSITORY/pledgemanager-be-users:$IMAGE_TAG 
-          docker image build ./src --file ./src/Dockerfile-backend-functions --tag $DOCKER_REPOSITORY/pledgemanager-fe-functions:$IMAGE_TAG 
+          docker image build ./src --file ./src/Dockerfile-frontend-functions --tag $DOCKER_REPOSITORY/pledgemanager-fe-functions:$IMAGE_TAG 
       
       - name: Login to Docker Hub
         uses: docker/login-action@v2
