@@ -3,6 +3,6 @@ dapr run `
     --app-port 6000 `
     --dapr-http-port 3600 `
     --dapr-grpc-port 60000 `
-    --config ../dapr/config/config.yaml `
-    --components-path ../dapr/components `
+    --config ../../deploy/dapr/config/config.yaml `
+    --components-path ../../deploy/dapr/components `
     dotnet run

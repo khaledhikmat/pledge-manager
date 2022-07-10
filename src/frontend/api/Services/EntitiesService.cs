@@ -17,34 +17,21 @@ namespace pledgemanager.frontend.api.Services
     public class EntitiesService : IEntitiesService 
     {
         private DaprClient _daprClient;
-        //WARNING: The http factories are no longer needed since we r using DAPR.
-        //They are kept for refernce
-        private IHttpClientFactory _campaignsHttpFactory;
-        private IHttpClientFactory _usersHttpFactory;
-        private HttpClient _campaignsHttpClient;
-        private HttpClient _usersHttpClient;
         private ILogger<EntitiesService> _logger;
-        private ISettingService _config;
+        private IEnvironmentService _envService;
 
-        public EntitiesService(DaprClient daprClient, IHttpClientFactory campaignsHttp, IHttpClientFactory usersHttp, ILogger<EntitiesService> logger, ISettingService config) 
+        public EntitiesService(DaprClient daprClient, ILogger<EntitiesService> logger, IEnvironmentService envService) 
         {
             _daprClient = daprClient;
-            _campaignsHttpFactory = campaignsHttp;
-            _campaignsHttpClient = _campaignsHttpFactory.CreateClient("campaignsbackend");
-            _usersHttpFactory = usersHttp;
-            _usersHttpClient = _campaignsHttpFactory.CreateClient("usersbackend");
             _logger = logger;
-            _config = config;
-
-            _campaignsHttpClient.BaseAddress = new Uri(_config.GetCampaignsBackendBaseUrl());
-            _usersHttpClient.BaseAddress = new Uri(_config.GetUsersBackendBaseUrl());
+            _envService = envService;
         }
         
         public async Task<List<Campaign>> GetCampaigns() 
         {
             var campaigns = await _daprClient.InvokeMethodAsync<List<Campaign>>(
             HttpMethod.Get,
-            Constants.DAPR_CAMPAIGNS_APP_NAME,
+            _envService.GetCampaignsAppName(),
             $"/entities/campaigns");
 
             return campaigns;
@@ -54,7 +41,7 @@ namespace pledgemanager.frontend.api.Services
         {
             var campaign = await _daprClient.InvokeMethodAsync<Campaign>(
             HttpMethod.Get,
-            Constants.DAPR_CAMPAIGNS_APP_NAME,
+            _envService.GetCampaignsAppName(),
             $"/entities/campaigns/{id}");
 
             return campaign;
@@ -64,7 +51,7 @@ namespace pledgemanager.frontend.api.Services
         {
             var periods = await _daprClient.InvokeMethodAsync<List<FundSinkPeriod>>(
             HttpMethod.Get,
-            Constants.DAPR_CAMPAIGNS_APP_NAME,
+            _envService.GetCampaignsAppName(),
             $"/entities/campaigns/{id}/periods");
 
             return periods;
@@ -74,7 +61,7 @@ namespace pledgemanager.frontend.api.Services
         {
             var response = await _daprClient.InvokeMethodAsync<CampaignCommand, ConfirmationResponse>(
             HttpMethod.Put,
-            Constants.DAPR_CAMPAIGNS_APP_NAME,
+            _envService.GetCampaignsAppName(),
             $"/entities/campaigns/{campaignId}/commands",
             command);
 
@@ -85,7 +72,7 @@ namespace pledgemanager.frontend.api.Services
         {
             var response = await _daprClient.InvokeMethodAsync<Campaign, ConfirmationResponse>(
             HttpMethod.Put,
-            Constants.DAPR_CAMPAIGNS_APP_NAME,
+            _envService.GetCampaignsAppName(),
             $"/entities/campaigns/{campaignId}/updates",
             campaign);
 
@@ -96,7 +83,7 @@ namespace pledgemanager.frontend.api.Services
         {
             var response = await _daprClient.InvokeMethodAsync<Pledge, ConfirmationResponse>(
             HttpMethod.Post,
-            Constants.DAPR_CAMPAIGNS_APP_NAME,
+            _envService.GetCampaignsAppName(),
             $"/entities/campaigns/{campaignId}/pledges",
             pledge);
 
@@ -106,14 +93,14 @@ namespace pledgemanager.frontend.api.Services
         public async Task RegisterUser(string userName)
         {
             await _daprClient.InvokeMethodAsync(
-            Constants.DAPR_USERS_APP_NAME,
+            _envService.GetUsersAppName(),
             $"/users/verifications/{userName}");
         }
 
         public async Task VerifyUser(string userName, string code)
         {
             await _daprClient.InvokeMethodAsync(
-            Constants.DAPR_USERS_APP_NAME,
+            _envService.GetUsersAppName(),
             $"/users/verifications/{userName}/{code}");
         }
     }

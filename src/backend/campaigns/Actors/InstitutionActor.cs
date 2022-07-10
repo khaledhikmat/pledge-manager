@@ -12,10 +12,12 @@ public class InstitutionActor : Actor, IFundSinkActor
     private const int EXTERNALIZE_TIMER_PERIODIC = 10;
 
     private DaprClient _daprClient;
+    private IEnvironmentService _envService;
 
-    public InstitutionActor(ActorHost host, DaprClient daprClient) : base(host)
+    public InstitutionActor(ActorHost host, DaprClient daprClient, IEnvironmentService envService) : base(host)
     {
         _daprClient = daprClient;
+        _envService = envService;
     }
 
     protected override async Task OnActivateAsync()
@@ -78,7 +80,7 @@ public class InstitutionActor : Actor, IFundSinkActor
         // Save the state to a state store
         Logger.LogInformation($"InstitutionActor - ExternalizationTimerCallback [{this.Id.ToString()}] - Save to state store");
         var institution = await GetInstitutionState();
-        await this._daprClient.SaveStateAsync<Institution>(Constants.DAPR_CAMPAIGNS_STORE_NAME, institution.Identifier, institution);
+        await this._daprClient.SaveStateAsync<Institution>(_envService.GetStateStoreName(), institution.Identifier, institution);
 
         //WARNING: Huh? await proxy.Fund(institution);
         var input = new FundSink();
@@ -165,7 +167,7 @@ public class InstitutionActor : Actor, IFundSinkActor
         if (!actorState.HasValue) 
         {
             Logger.LogInformation($"InstitutionActor - GetInstitutionState [{this.Id.ToString()}]");
-            var stateEntry = await _daprClient.GetStateEntryAsync<Institution>(Constants.DAPR_CAMPAIGNS_STORE_NAME, this.Id.ToString());
+            var stateEntry = await _daprClient.GetStateEntryAsync<Institution>(_envService.GetStateStoreName(), this.Id.ToString());
             if (stateEntry != null && stateEntry.Value != null)
             {
                 institution = stateEntry.Value;

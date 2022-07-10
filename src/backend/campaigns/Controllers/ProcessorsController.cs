@@ -5,12 +5,14 @@ namespace pledgemanager.backend.campaigns.Controllers;
 public class ProcessorController : ControllerBase
 {
     private readonly ILogger<ProcessorController> _logger;
+
     public ProcessorController(ILogger<ProcessorController> logger)
     {
         _logger = logger;
     }
 
-    [Topic(Constants.DAPR_CAMPAIGNS_PUBSUB_NAME, Constants.DAPR_COMMANDS_PUBSUB_TOPIC_NAME)]
+    //WARNING: The PUBSUB name is hard-coded!!!
+    [Topic(Constants.DAPR_PUBSUB_NAME, Constants.DAPR_COMMANDS_PUBSUB_TOPIC_NAME)]
     [Route("campaigncommands")]
     [HttpPost()]
     public async Task<ActionResult> IssueCampaignCommandAsync(CampaignCommand command)
@@ -37,7 +39,8 @@ public class ProcessorController : ControllerBase
         }
     }
 
-    [Topic(Constants.DAPR_CAMPAIGNS_PUBSUB_NAME, Constants.DAPR_PLEDGES_PUBSUB_TOPIC_NAME)]
+    //WARNING: The PUBSUB name is hard-coded!!!
+    [Topic(Constants.DAPR_PUBSUB_NAME, Constants.DAPR_PLEDGES_PUBSUB_TOPIC_NAME)]
     [Route("pledges")]
     [HttpPost()]
     public async Task<ActionResult> ProcessPledgeAsync(Pledge pledge)

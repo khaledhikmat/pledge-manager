@@ -1,0 +1,11 @@
+The following are some Bicep resources:
+- [Bicep documentation](https://docs.microsoft.com/en-us/azure/azure-resource-manager/bicep/)
+- [Microservices using DAPR](https://docs.microsoft.com/en-us/azure/container-apps/microservices-dapr-azure-resource-manager?tabs=bash&pivots=container-apps-bicep)
+- [Azure Sample on Bicep](https://github.com/Azure-Samples/container-apps-store-api-microservice/blob/main/deploy/main.bicep)
+- [A collection of snippets](https://azureossd.github.io/2022/05/13/Container-Apps-and-Bicep-Deployments/index.html)
+- [Template for DAPR component](https://docs.microsoft.com/en-us/azure/container-apps/microservices-dapr-azure-resource-manager?tabs=bash&pivots=container-apps-bicep#create-azure-bicep-templates)
+- [Templates](https://docs.microsoft.com/en-us/azure/templates/microsoft.app/managedenvironments/daprcomponents?tabs=bicep)
+- [Sample deployment](https://www.thorsten-hans.com/how-to-deploy-azure-container-apps-with-bicep/)
+- [Villa sample](https://dev.to/willvelida/creating-and-provisioning-azure-container-apps-with-bicep-4gfb)
+- [Villa sample main bicep](https://github.com/willvelida/todo-containerapps/blob/main/deploy/main.bicep)
+- [Az deployment](https://docs.microsoft.com/en-us/cli/azure/deployment/sub?view=azure-cli-latest#az-deployment-sub-create)

@@ -1,18 +1,16 @@
 apiVersion: dapr.io/v1alpha1
 kind: Component
 metadata:
-  name: users-statestore
+  name: pledgemanager-local-statestore
   namespace: dapr-pledgemanager
 spec:
   type: state.redis
   version: v1
   metadata:
   - name: redisHost
-    value: localhost:6379
+    value: redis:6379
   - name: redisPassword
-    secretKeyRef:
-      name: state.redisPassword
-      key: state.redisPassword
+    value: ""
   - name: actorStateStore
     value: "true"
   - name: keyPrefix
@@ -20,4 +18,5 @@ spec:
 auth:
   secretStore: pledgemanager-secrets
 scopes:
+  - pledgemanager-campaigns
   - pledgemanager-users

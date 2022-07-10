@@ -115,8 +115,8 @@ curl -X POST http://localhost:3601/v1.0-alpha1/state/statestore/query?metadata.c
 Docker files have to be at the root because they need to include the shared library.
 
 ```bash
-docker image build -t pledge-manager/campaigns:1.0 . -f Dockerfile-campaigns
-docker container run -it  -p 6000:6000 pledge-manager/campaigns:1.0
+docker image build -t pledgemanager-be-campaigns:1.0 . -f Dockerfile-backend-campaigns
+docker container run -it  -p 6000:6000 pledgemanager-be-campaigns:1.0
 docker inspect <container-id>
 ```
 
@@ -125,20 +125,30 @@ Make sure the ASP.Net core project run using `0.0.0.0` as opposed to `localhost`
 You can also get into the Docker container:
 
 ```
-docker run  -it pledge-manager/campaigns:1.0 /bin/bash
+docker container run  -it pledgemanager-be-campaigns:1.0 /bin/bash
 ```
 
 To push to Docker hub:
 
+**Please note that image name has to be formatted this way: `<accountname>/<image-name>:tag`**
+
+**Please note that, if you are building an image using MacOS M1 chip, you must instruct Docker to build using amd64 platform:**
+
+```bash
+docker buildx build --platform linux/amd64 -t khaledhikmat/pledgemanager-be-campaigns:1.0 . -f Dockerfile-backend-campaigns
+```
+
 ```
 docker login
-docker push khaledhikmat/image-name:tag
+docker push khaledhikmat/pledgemanager-be-campaigns:1.0
 ```
+
 ## Kubernetes
 
 ```bash
 bash ./start.sh
 kubectl get pods -n dapr-pledgemanager
+kubectl logs <pod> -n dapr-pledgemanager
 bash ./stop.sh
 ```
 

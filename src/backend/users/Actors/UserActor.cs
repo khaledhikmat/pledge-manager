@@ -9,10 +9,12 @@ public class UserActor : Actor, IUserActor
     private const int VERIFICATION_ELAPSED_PERIOD_SECS = 180;
 
     private DaprClient _daprClient;
+    private IEnvironmentService _envService;
 
-    public UserActor(ActorHost host, DaprClient daprClient) : base(host)
+    public UserActor(ActorHost host, DaprClient daprClient, IEnvironmentService envService) : base(host)
     {
         _daprClient = daprClient;
+        _envService = envService;
     }
 
     protected override async Task OnActivateAsync()
@@ -76,7 +78,7 @@ public class UserActor : Actor, IUserActor
 
         await this.SaveUserState(user);
         await this.SaveVerificationXactionsState(xactions);
-        await this._daprClient.SaveStateAsync<User>(Constants.DAPR_USERS_STORE_NAME, user.Identifier, user);
+        await this._daprClient.SaveStateAsync<User>(_envService.GetStateStoreName(), user.Identifier, user);
     }
 
     public async Task<UserVerificationResponse> ValidateVerification(string code) 
@@ -109,7 +111,7 @@ public class UserActor : Actor, IUserActor
 
         await this.SaveUserState(user);
         await this.SaveVerificationXactionsState(xactions);
-        await this._daprClient.SaveStateAsync<User>(Constants.DAPR_USERS_STORE_NAME, user.Identifier, user);
+        await this._daprClient.SaveStateAsync<User>(_envService.GetStateStoreName(), user.Identifier, user);
 
         response.Verified = xaction != null ? xaction.Verified : false;
         response.Type = user.Type;
@@ -125,7 +127,7 @@ public class UserActor : Actor, IUserActor
         if (!actorState.HasValue) 
         {
             Logger.LogInformation($"UserActor - GetUserState [{this.Id.ToString()}]");
-            var stateEntry = await _daprClient.GetStateEntryAsync<User>(Constants.DAPR_USERS_STORE_NAME, this.Id.ToString());
+            var stateEntry = await _daprClient.GetStateEntryAsync<User>(_envService.GetStateStoreName(), this.Id.ToString());
             if (stateEntry != null && stateEntry.Value != null)
             {
                 user = stateEntry.Value;

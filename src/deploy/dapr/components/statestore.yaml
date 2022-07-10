@@ -1,7 +1,7 @@
 apiVersion: dapr.io/v1alpha1
 kind: Component
 metadata:
-  name: campaigns-statestore
+  name: pledgemanager-local-statestore
   namespace: dapr-pledgemanager
 spec:
   type: state.redis
@@ -20,4 +20,5 @@ spec:
 auth:
   secretStore: pledgemanager-secrets
 scopes:
-  - pledgemanager-campaigns
+  - pledgemanager-local-campaigns
+  - pledgemanager-local-users
