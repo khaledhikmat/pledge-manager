@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DOCKER_REPOSITORY: khaledhikmat
-      IMAGE_TAG: ${{ github.run_number }} # $GITHUB_RUN_NUMBER
+      IMAGE_TAG: latest #${{ github.run_number }} 
     
     steps:
 

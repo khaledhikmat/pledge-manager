@@ -1,10 +1,6 @@
-﻿using Dapr.Client;
-using pledgemanager.shared.Models;
+﻿using pledgemanager.shared.Models;
 using pledgemanager.shared.Utils;
 using pledgemanager.shared.Services;
-using System.Net.Http.Headers;
-using Newtonsoft.Json;
-using System.Text;
 
 try
 {

@@ -18,7 +18,7 @@
             "value": [
                 {
                     "shortName": "campaigns",
-                    "image": "khaledhikmat/pledgemanager-be-campaigns:1.5",
+                    "image": "khaledhikmat/pledgemanager-be-campaigns:latest",
                     "port": 6000,
                     "maxReplicas": 2,
                     "isExternalIngress": true,
@@ -31,7 +31,7 @@
                 },
                 {
                     "shortName": "users",
-                    "image": "khaledhikmat/pledgemanager-be-users:1.5",
+                    "image": "khaledhikmat/pledgemanager-be-users:latest",
                     "port": 6001,
                     "maxReplicas": 2,
                     "isExternalIngress": true,
@@ -44,7 +44,7 @@
                 },
                 {
                     "shortName": "functions",
-                    "image": "khaledhikmat/pledgemanager-fe-functions:1.5",
+                    "image": "khaledhikmat/pledgemanager-fe-functions:latest",
                     "port": 6002,
                     "maxReplicas": 2,
                     "isExternalIngress": true,
