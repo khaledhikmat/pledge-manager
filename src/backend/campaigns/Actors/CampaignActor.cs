@@ -24,11 +24,13 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
  
     private DaprClient _daprClient;
     private SignalRRestService _signalRService;
+    private IEnvironmentService _envService;
 
-    public CampaignActor(ActorHost host, DaprClient daprClient, SignalRRestService signalRService) : base(host)
+    public CampaignActor(ActorHost host, DaprClient daprClient, SignalRRestService signalRService, IEnvironmentService envService) : base(host)
     {
         _daprClient = daprClient;
         _signalRService = signalRService; 
+        _envService = envService; 
     }
 
     protected override async Task OnActivateAsync()
@@ -149,7 +151,7 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
         {
             await this.SaveCampaignState(campaign);
             await this.SaveUpdatesState(updates);
-            await _daprClient.SaveStateAsync<Campaign>(Constants.DAPR_CAMPAIGNS_STORE_NAME, campaign.Identifier, campaign);
+            await _daprClient.SaveStateAsync<Campaign>(_envService.GetStateStoreName(), campaign.Identifier, campaign);
         }
 
         return error;
@@ -420,7 +422,7 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
         Logger.LogInformation($"CampaignActor - ExternalizationTimerCallback [{this.Id.ToString()}] - Save to state store");
         var campaign = await GetCampaignState();
         campaign.LastRefreshTime = DateTime.Now;
-        await this._daprClient.SaveStateAsync<Campaign>(Constants.DAPR_CAMPAIGNS_STORE_NAME, campaign.Identifier, campaign);
+        await this._daprClient.SaveStateAsync<Campaign>(_envService.GetStateStoreName(), campaign.Identifier, campaign);
 
         // Update the parent institution
         try
@@ -508,7 +510,7 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
                 campaign.Fund += matchPledge.Amount;
                 campaign.MatchFund = 0;
 
-                await this._daprClient.SaveStateAsync<Pledge>(Constants.DAPR_CAMPAIGNS_STORE_NAME, matchPledge.Identifier, matchPledge);
+                await this._daprClient.SaveStateAsync<Pledge>(_envService.GetStateStoreName(), matchPledge.Identifier, matchPledge);
             }
 
             pledges = pledges.Select(p => {p.PercentageOfTotalFund = campaign.Fund > 0 ? p.Amount / campaign.Fund : 0; return p;}).ToList();
@@ -559,12 +561,12 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
             //WARNING: Saving to external store right away so we can keep pledges and donors readuly available
             if (pledge != null)
             {
-                await this._daprClient.SaveStateAsync<Pledge>(Constants.DAPR_CAMPAIGNS_STORE_NAME, pledge.Identifier, pledge);
+                await this._daprClient.SaveStateAsync<Pledge>(_envService.GetStateStoreName(), pledge.Identifier, pledge);
             }
 
             if (donor != null )
             {
-                await this._daprClient.SaveStateAsync<Donor>(Constants.DAPR_CAMPAIGNS_STORE_NAME, donor.Identifier, donor);
+                await this._daprClient.SaveStateAsync<Donor>(_envService.GetStateStoreName(), donor.Identifier, donor);
             }
         } 
         catch (Exception e)
@@ -581,7 +583,7 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
         if (!actorState.HasValue) 
         {
             Logger.LogInformation($"CampaignActor - GetCampaignState [{this.Id.ToString()}]");
-            var stateEntry = await _daprClient.GetStateEntryAsync<Campaign>(Constants.DAPR_CAMPAIGNS_STORE_NAME, this.Id.ToString());
+            var stateEntry = await _daprClient.GetStateEntryAsync<Campaign>(_envService.GetStateStoreName(), this.Id.ToString());
             if (stateEntry != null && stateEntry.Value != null)
             {
                 campaign = stateEntry.Value;
@@ -609,7 +611,7 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
 
         //WARNING: Save to external storage right away...duplicated in externalization
         campaign.LastRefreshTime = DateTime.Now;
-        await this._daprClient.SaveStateAsync<Campaign>(Constants.DAPR_CAMPAIGNS_STORE_NAME, campaign.Identifier, campaign);
+        await this._daprClient.SaveStateAsync<Campaign>(_envService.GetStateStoreName(), campaign.Identifier, campaign);
 
         //WARNING: Externalize campaign to SignalR to allow for real-time updates
         Logger.LogInformation($"CampaignActor - Externalize campaign [{this.Id.ToString()}] to SignalR for real-time updates....");

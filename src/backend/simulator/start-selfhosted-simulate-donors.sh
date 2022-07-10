@@ -1,1 +1,4 @@
-dapr run --app-id=pledgemanager-simulator dotnet run simulatedonors 123456
+#!/bin/bash
+source ./set-dev-env-vars.sh
+printenv
+dotnet run simulatedonors 123456

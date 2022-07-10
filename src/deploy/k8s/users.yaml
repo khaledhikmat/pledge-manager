@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pledgemanager-local-users
+  namespace: dapr-pledgemanager
+  labels:
+    app: pledgemanager-local-users
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pledgemanager-local-users
+  template:
+    metadata:
+      labels:
+        app: pledgemanager-local-users
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "pledgemanager-local-users"
+        dapr.io/app-port: "6001"
+        dapr.io/config: "dapr-config"
+    spec:
+      containers:
+      - name: pledgemanager-local-users
+        image: pledgemanager-be-users:1.0
+        ports:
+        - containerPort: 6001
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: pledgemanager-local-users
+  name: pledgemanager-local-users
+  namespace: dapr-pledgemanager
+spec:
+  type: LoadBalancer
+  ports:
+  - name: "data"
+    port: 6001
+    targetPort: 6001
+  selector:
+    app: pledgemanager-local-users
+

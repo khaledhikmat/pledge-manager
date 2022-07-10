@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pledgemanager-local-functions
+  namespace: dapr-pledgemanager
+  labels:
+    app: pledgemanager-local-functions
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pledgemanager-local-functions
+  template:
+    metadata:
+      labels:
+        app: pledgemanager-local-functions
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "pledgemanager-local-functions"
+        dapr.io/app-port: "6002"
+        dapr.io/config: "dapr-config"
+    spec:
+      containers:
+      - name: pledgemanager-functions
+        image: pledgemanager-fe-functions:1.0
+        ports:
+        - containerPort: 6002
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: pledgemanager-local-functions
+  name: pledgemanager-local-functions
+  namespace: dapr-pledgemanager
+spec:
+  type: LoadBalancer
+  ports:
+  - name: "data"
+    port: 6002
+    targetPort: 6002
+  selector:
+    app: pledgemanager-local-functions
+

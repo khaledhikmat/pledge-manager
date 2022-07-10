@@ -1,0 +1,5 @@
+echo "Setting DEV env vars."
+export TARGET_ENV="dev"
+export PRODUCT="pledgemanager"
+export CAMPAIGNS_BASE_URL="https://pledgemanager-dev-campaigns.salmondune-f640e4c7.eastus.azurecontainerapps.io"
+export USERS_BASE_URL="https://pledgemanager-dev-users.salmondune-f640e4c7.eastus.azurecontainerapps.io"

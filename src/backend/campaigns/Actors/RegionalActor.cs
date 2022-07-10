@@ -12,10 +12,12 @@ public class RegionalActor : Actor, IFundSinkActor
     private const int EXTERNALIZE_TIMER_PERIODIC = 10;
 
     private DaprClient _daprClient;
+    private IEnvironmentService _envService;
 
-    public RegionalActor(ActorHost host, DaprClient daprClient) : base(host)
+    public RegionalActor(ActorHost host, DaprClient daprClient, IEnvironmentService envService) : base(host)
     {
         _daprClient = daprClient;
+        _envService = envService;
     }
 
     protected override async Task OnActivateAsync()
@@ -78,7 +80,7 @@ public class RegionalActor : Actor, IFundSinkActor
         // Save the state to a state store
         Logger.LogInformation($"RegionalActor - ExternalizationTimerCallback [{this.Id.ToString()}] - Save to state store");
         var region = await GetRegionState();
-        await this._daprClient.SaveStateAsync<FundSink>(Constants.DAPR_CAMPAIGNS_STORE_NAME, region.Identifier, region);
+        await this._daprClient.SaveStateAsync<FundSink>(_envService.GetStateStoreName(), region.Identifier, region);
     }
 
     private async Task<FundSink> GetRegionState() 
@@ -88,7 +90,7 @@ public class RegionalActor : Actor, IFundSinkActor
         if (!actorState.HasValue) 
         {
             Logger.LogInformation($"RegionalActor - GetRegionState [{this.Id.ToString()}]");
-            var stateEntry = await _daprClient.GetStateEntryAsync<FundSink>(Constants.DAPR_CAMPAIGNS_STORE_NAME, this.Id.ToString());
+            var stateEntry = await _daprClient.GetStateEntryAsync<FundSink>(_envService.GetStateStoreName(), this.Id.ToString());
             if (stateEntry != null && stateEntry.Value != null)
             {
                 region = stateEntry.Value;

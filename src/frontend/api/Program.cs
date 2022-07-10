@@ -11,21 +11,33 @@ var configuration = builder.Configuration;
 //Register an HTTP client to access signalr REST APIs directly
 builder.Services.AddHttpClient("signalr");
 
-//WARNING: The http factories are no longer needed since we r using DAPR.
-//They are kept for refernce
-
-//Register an HTTP client to access the campaigns backend APIs directly
-builder.Services.AddHttpClient("campaignbackend");
-
-//Register an HTTP client to access the users backend APIs directly
-builder.Services.AddHttpClient("usersbackend");
-
 // Add services to the container.
 builder.Services.AddSingleton<IConfiguration>(configuration);
-builder.Services.AddSingleton<SignalRAuthService>(_ => new SignalRAuthService("Endpoint=https://my-service.service.signalr.net;"));
+builder.Services.AddSingleton<IEnvironmentService, EnvironmentService>();
+
+var envService = builder.Services.BuildServiceProvider().GetService<IEnvironmentService>();
+
+builder.Services.AddSingleton<SignalRAuthService>(sp => 
+{
+    return new SignalRAuthService(envService.GetSignalRConnectionString());
+});
 builder.Services.AddSingleton<SignalRRestService>();
-builder.Services.AddSingleton<ISettingService, SettingService>();
 builder.Services.AddSingleton<IEntitiesService, EntitiesService>();
+
+var corsPlicyName = "BlazorPolicy";
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(name: Constants.BLAZOR_POLICY,
+                      policy  =>
+                      {
+                          policy
+                          .WithOrigins(envService.GetAllowedOrigins())
+                          .AllowAnyMethod()
+                          .AllowAnyHeader()
+                          .AllowCredentials();
+                      });
+});
+
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 .AddJwtBearer(options =>
@@ -49,7 +61,6 @@ builder.Services.AddDaprClient(builder => builder
     .UseGrpcEndpoint($"http://localhost:{daprGrpcPort}"));
 
 
-//builder.Services.AddDaprClient();
 builder.Services.AddSignalR().AddAzureSignalR();
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
@@ -80,6 +91,8 @@ app.UseBlazorFrameworkFiles();
 app.UseStaticFiles();
 
 app.UseRouting();
+
+app.UseCors(corsPlicyName);
 
 app.UseAuthentication();
 app.UseAuthorization();

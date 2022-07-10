@@ -1,0 +1,61 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "paramEnvironment": {
+            "value": {
+                "name": "dev",
+                "product": "pledgemanager",
+                "isSignalR": true,
+                "isRedis": true,
+                "isRedisStateStore": true,
+                "isRedisPubsub": true,
+                "isCosmosDB": false,
+                "isServiceBus": false
+            }
+        },
+        "paramApps": {
+            "value": [
+                {
+                    "shortName": "campaigns",
+                    "image": "khaledhikmat/pledgemanager-be-campaigns:1.5",
+                    "port": 6000,
+                    "maxReplicas": 2,
+                    "isExternalIngress": true,
+                    "isPrivateRegistry": false,
+                    "registryName": "index.docker.io",
+                    "registryUserName": "khaledhikmat",
+                    "registryPassword": "<my-pwd>",
+                    "isRedisStateStore": true,
+                    "isRedisPubsub": true
+                },
+                {
+                    "shortName": "users",
+                    "image": "khaledhikmat/pledgemanager-be-users:1.5",
+                    "port": 6001,
+                    "maxReplicas": 2,
+                    "isExternalIngress": true,
+                    "isPrivateRegistry": false,
+                    "registryName": "index.docker.io",
+                    "registryUserName": "khaledhikmat",
+                    "registryPassword": "<my-pwd>",
+                    "isRedisStateStore": true,
+                    "isRedisPubsub": true
+                },
+                {
+                    "shortName": "functions",
+                    "image": "khaledhikmat/pledgemanager-fe-functions:1.5",
+                    "port": 6002,
+                    "maxReplicas": 2,
+                    "isExternalIngress": true,
+                    "isPrivateRegistry": false,
+                    "registryName": "index.docker.io",
+                    "registryUserName": "khaledhikmat",
+                    "registryPassword": "<my-pwd>",
+                    "isRedisStateStore": true,
+                    "isRedisPubsub": true
+                }
+            ]
+        }
+    }
+}

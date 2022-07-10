@@ -1,0 +1,21 @@
+FROM mcr.microsoft.com/dotnet/sdk:6.0-bullseye-slim AS build-env
+WORKDIR /app
+
+# Copy everything else and build
+COPY ./frontend/api ./frontend/api
+COPY ./frontend/client ./frontend/client
+COPY ./shared ./shared
+RUN dotnet publish -c Release -o out ./frontend/api/api.csproj
+
+# Build runtime image
+FROM mcr.microsoft.com/dotnet/aspnet:6.0-bullseye-slim
+# Use an app directory (as opposed to root) as we might get into a permission issue
+WORKDIR /app
+COPY --from=build-env /app/out .
+
+# Expose ports
+EXPOSE 6002/tcp
+ENV ASPNETCORE_URLS http://*:6002
+
+# Start
+ENTRYPOINT ["dotnet", "api.dll"]

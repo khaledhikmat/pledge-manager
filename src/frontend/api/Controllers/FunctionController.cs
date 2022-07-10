@@ -3,12 +3,14 @@ using System.Security.Claims;
 using System.Text;
 using Dapr.Client;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.IdentityModel.Tokens;
 using pledgemanager.frontend.api.Services;
 
 namespace pledgemanager.frontend.api.Controllers;
 
 [ApiController]
+[EnableCors(Constants.BLAZOR_POLICY)]
 [Route("[controller]")]
 public class FunctionController : ControllerBase
 {

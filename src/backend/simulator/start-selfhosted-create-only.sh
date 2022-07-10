@@ -1,1 +1,4 @@
-dapr run --app-id=pledgemanager-simulator dotnet run create ignore
+#!/bin/bash
+source ./set-dev-env-vars.sh
+printenv
+dotnet run create ignore

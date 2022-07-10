@@ -1,7 +1,7 @@
 apiVersion: dapr.io/v1alpha1
 kind: Component
 metadata:
-  name: users-pubsub
+  name: pledgemanager-local-pubsub
   namespace: dapr-pledgemanager
 spec:
   type: pubsub.redis
@@ -20,4 +20,5 @@ spec:
 auth:
   secretStore: pledgemanager-secrets
 scopes:
-  - pledgemanager-users
+  - pledgemanager-local-campaigns
+  - pledgemanager-local-users

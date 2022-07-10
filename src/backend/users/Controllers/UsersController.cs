@@ -7,10 +7,12 @@ namespace pledgemanager.backend.users.Controllers;
 public class UsersController : ControllerBase
 {
     private readonly ILogger<UsersController> _logger;
+    private readonly IEnvironmentService _envService;
 
-    public UsersController(ILogger<UsersController> logger)
+    public UsersController(ILogger<UsersController> logger, IEnvironmentService envService)
     {
         _logger = logger;
+        _envService = envService;
     }
 
     //**** USERS
@@ -21,7 +23,7 @@ public class UsersController : ControllerBase
         try
         {
             _logger.LogInformation($"GetUserById - {id}");
-            var stateEntry = await daprClient.GetStateEntryAsync<User>(Constants.DAPR_USERS_STORE_NAME, id);
+            var stateEntry = await daprClient.GetStateEntryAsync<User>(_envService.GetStateStoreName(), id);
             return Ok(stateEntry != null ? stateEntry.Value : null);
         }
         catch (Exception e)
@@ -71,7 +73,7 @@ public class UsersController : ControllerBase
         try
         {
             _logger.LogInformation($"CreateUserAsync - {user.Identifier}");
-            await daprClient.SaveStateAsync<User>(Constants.DAPR_USERS_STORE_NAME, user.Identifier, user);
+            await daprClient.SaveStateAsync<User>(_envService.GetStateStoreName(), user.Identifier, user);
             return Ok();
         }
         catch (Exception e)
