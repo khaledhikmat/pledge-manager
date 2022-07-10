@@ -62,5 +62,5 @@ jobs:
         inlineScript: |
           az deployment sub create \
           --location eastus \
-          --template-file ./main.bicep \
-          --parameters ./dev-env-params.json      
+          --template-file ./src/deploy/aca/bicep/main.bicep \
+          --parameters ./src/deploy/aca/bicep/dev-env-params.json      
