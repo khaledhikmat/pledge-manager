@@ -54,13 +54,13 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v1
         with:
-        creds: ${{ secrets.AZURE_SP }}      
+          creds: ${{ secrets.AZURE_SP }}      
 
       - name: Load Azure CLI and deploy using bicep 
         uses: azure/CLI@v1
         with:
-        inlineScript: |
-          az deployment sub create \
-          --location eastus \
-          --template-file ./src/deploy/aca/bicep/main.bicep \
-          --parameters ./src/deploy/aca/bicep/dev-env-params.json      
+          inlineScript: |
+            az deployment sub create \
+            --location eastus \
+            --template-file ./src/deploy/aca/bicep/main.bicep \
+            --parameters ./src/deploy/aca/bicep/dev-env-params.json      
