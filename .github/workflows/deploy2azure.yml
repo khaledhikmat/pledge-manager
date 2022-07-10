@@ -27,7 +27,7 @@ jobs:
         run: |
           docker image build ./src --file ./src/Dockerfile-backend-campaigns --tag $DOCKER_REPOSITORY/pledgemanager-be-campaigns:$IMAGE_TAG 
           docker image build ./src --file ./src/Dockerfile-backend-users --tag $DOCKER_REPOSITORY/pledgemanager-be-users:$IMAGE_TAG 
-          docker image build ./src --file ./src/Dockerfile-backend-functions --tag $DOCKER_REPOSITORY/pledgemanager-fe-functions:$IMAGE_TAG 
+          docker image build ./src --file ./src/Dockerfile-frontend-functions --tag $DOCKER_REPOSITORY/pledgemanager-fe-functions:$IMAGE_TAG 
       
       - name: Login to Docker Hub
         uses: docker/login-action@v2
@@ -54,13 +54,13 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v1
         with:
-        creds: ${{ secrets.AZURE_SP }}      
+          creds: ${{ secrets.AZURE_SP }}      
 
       - name: Load Azure CLI and deploy using bicep 
         uses: azure/CLI@v1
         with:
-        inlineScript: |
-          az deployment sub create \
-          --location eastus \
-          --template-file ./src/deploy/aca/bicep/main.bicep \
-          --parameters ./src/deploy/aca/bicep/dev-env-params.json      
+          inlineScript: |
+            az deployment sub create \
+            --location eastus \
+            --template-file ./src/deploy/aca/bicep/main.bicep \
+            --parameters ./src/deploy/aca/bicep/dev-env-params.json      
