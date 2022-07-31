@@ -93,14 +93,14 @@ namespace pledgemanager.frontend.api.Services
         public async Task RegisterUser(string userName)
         {
             await _daprClient.InvokeMethodAsync(
-            _envService.GetUsersAppName(),
+            _envService.GetCampaignsAppName(),
             $"/users/verifications/{userName}");
         }
 
-        public async Task VerifyUser(string userName, string code)
+        public async Task<UserVerificationResponse> VerifyUser(string userName, string code)
         {
-            await _daprClient.InvokeMethodAsync(
-            _envService.GetUsersAppName(),
+            return await _daprClient.InvokeMethodAsync<UserVerificationResponse>(
+            _envService.GetCampaignsAppName(),
             $"/users/verifications/{userName}/{code}");
         }
     }

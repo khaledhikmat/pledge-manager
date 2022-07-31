@@ -30,19 +30,6 @@
                     "isRedisPubsub": true
                 },
                 {
-                    "shortName": "users",
-                    "image": "khaledhikmat/pledgemanager-be-users:latest",
-                    "port": 6001,
-                    "maxReplicas": 2,
-                    "isExternalIngress": true,
-                    "isPrivateRegistry": false,
-                    "registryName": "index.docker.io",
-                    "registryUserName": "khaledhikmat",
-                    "registryPassword": "<my-pwd>",
-                    "isRedisStateStore": true,
-                    "isRedisPubsub": true
-                },
-                {
                     "shortName": "functions",
                     "image": "khaledhikmat/pledgemanager-fe-functions:latest",
                     "port": 6002,

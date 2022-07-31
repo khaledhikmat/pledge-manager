@@ -1,4 +1,4 @@
-namespace pledgemanager.backend.users.Actors;
+namespace pledgemanager.backend.campaigns.Actors;
 
 public class UserActor : Actor, IUserActor
 {
@@ -10,11 +10,13 @@ public class UserActor : Actor, IUserActor
 
     private DaprClient _daprClient;
     private IEnvironmentService _envService;
+    private IPersistenceService _persistenceService;
 
-    public UserActor(ActorHost host, DaprClient daprClient, IEnvironmentService envService) : base(host)
+    public UserActor(ActorHost host, DaprClient daprClient, IEnvironmentService envService, IPersistenceService persService) : base(host)
     {
         _daprClient = daprClient;
         _envService = envService;
+        _persistenceService = persService;
     }
 
     protected override async Task OnActivateAsync()
@@ -78,7 +80,7 @@ public class UserActor : Actor, IUserActor
 
         await this.SaveUserState(user);
         await this.SaveVerificationXactionsState(xactions);
-        await this._daprClient.SaveStateAsync<User>(_envService.GetStateStoreName(), user.Identifier, user);
+        await this._persistenceService.PersistUser(user);
     }
 
     public async Task<UserVerificationResponse> ValidateVerification(string code) 
@@ -111,12 +113,35 @@ public class UserActor : Actor, IUserActor
 
         await this.SaveUserState(user);
         await this.SaveVerificationXactionsState(xactions);
-        await this._daprClient.SaveStateAsync<User>(_envService.GetStateStoreName(), user.Identifier, user);
+        await this._persistenceService.PersistUser(user);
 
         response.Verified = xaction != null ? xaction.Verified : false;
         response.Type = user.Type;
-        response.InstitutionIdentifier = user.InstitutionIdentifier;
+        response.Institutions = user.Permission.Institutions;
         return response;
+    }
+
+    public async Task Pledge(Pledge pledge)
+    {
+        Logger.LogInformation($"UserActor - Pledge against user [{this.Id.ToString()}] - Entry");
+        var user = await this.GetUserState();
+
+        try
+        {
+            if (pledge == null)
+            {
+                throw new Exception("Pledge is null!");
+            }
+
+            user.TotalPledgesCount++;
+            user.TotalContribution += pledge.Amount;
+            user.Pledges.Add(pledge);
+            user.Pledges = user.Pledges.Where(d => d.FulfilledTime != null).OrderByDescending(d => d.PledgeTime).Take(user.LastItemsCount).ToList(); 
+        }
+        catch (Exception e)
+        {
+            Logger.LogError($"UserActor - Processing pledge - error: {e.Message}");
+        }
     }
 
     private async Task<User> GetUserState() 
@@ -127,14 +152,12 @@ public class UserActor : Actor, IUserActor
         if (!actorState.HasValue) 
         {
             Logger.LogInformation($"UserActor - GetUserState [{this.Id.ToString()}]");
-            var stateEntry = await _daprClient.GetStateEntryAsync<User>(_envService.GetStateStoreName(), this.Id.ToString());
-            if (stateEntry != null && stateEntry.Value != null)
+            user = await this._persistenceService.RetrieveUserById(this.Id.ToString());
+            if (user == null)
             {
-                user = stateEntry.Value;
-            }
-            else 
-            {
-                user.Phone = this.Id.ToString();
+                user = new User();
+                user.Identifier = this.Id.ToString();
+                user.UserName = this.Id.ToString();
             }
 
             await this.StateManager.SetStateAsync(USER_STATE_NAME, user);

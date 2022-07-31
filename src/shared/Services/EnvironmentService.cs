@@ -25,11 +25,6 @@ public class EnvironmentService : IEnvironmentService
         return $"{GetProduct()}-{GetTargetEnvironment()}-campaigns";
     }
 
-    public string GetUsersAppName()
-    {
-        return $"{GetProduct()}-{GetTargetEnvironment()}-users";
-    }
-
     public string GetFunctionsAppName()
     {
         return $"{GetProduct()}-{GetTargetEnvironment()}-functions";

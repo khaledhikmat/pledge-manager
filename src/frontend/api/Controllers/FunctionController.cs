@@ -170,21 +170,31 @@ public class FunctionController : ControllerBase
         try
         {
             _logger.LogInformation($"VerifyUser - {username}");
-            await _entitiesService.VerifyUser(username, code);
+            var verifyResponse = await _entitiesService.VerifyUser(username, code);
+            if (verifyResponse == null)
+            {
+                throw new Exception("Verify reponse is empty!!");
+            }
 
             var claims = new List<Claim>();
             claims.Add(new Claim(ClaimTypes.Name, username));
 
-            //TODO: Read from the database
-            // Read user tags as claims
-            if (username == "2105551212")
+            if (verifyResponse.Type == UserTypes.Organizer)
             {
                 claims.Add(new Claim(ClaimTypes.Role, "Organizer"));
-                claims.Add(new Claim(ClaimTypes.NameIdentifier, "INST-0001"));
+                //TODO: Deal with permitted institutions here
             }
-            else 
+            else if (verifyResponse.Type == UserTypes.Admin)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, "Admin"));
+            }
+            else if (verifyResponse.Type == UserTypes.Donor)
             {
                 claims.Add(new Claim(ClaimTypes.Role, "Donor"));
+            }
+            else
+            {
+                throw new Exception("Unknown user type");
             }
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSecurityKey"]));

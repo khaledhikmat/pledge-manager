@@ -6,7 +6,6 @@ public interface IEnvironmentService
     string GetProduct();
     string GetSignalRConnectionString();
     string GetCampaignsAppName();
-    string GetUsersAppName();
     string GetFunctionsAppName();
     string GetStateStoreName();
     string GetPubSubName();

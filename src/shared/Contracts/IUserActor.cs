@@ -9,4 +9,5 @@ public interface IUserActor : IActor
     public Task GenerateVerification();
     public Task<UserVerificationResponse> ValidateVerification(string code);
     public Task<bool> IsVerified();
+    public Task Pledge(Pledge pledge); 
 }

@@ -15,11 +15,19 @@ public class Constants
 
     // CORS Policies
     public const string BLAZOR_POLICY = "BlazorPolicy";
-    // PUB Topics
-    public const string DAPR_PLEDGES_PUBSUB_TOPIC_NAME = "pledges";
-    public const string DAPR_COMMANDS_PUBSUB_TOPIC_NAME = "commands";
 
-    //WARNING: Used mainly in campagns microservice Processes controller...need a constant value
+    // PUB Topics
+    public const string DAPR_USERS_PERSISTOR_PUBSUB_TOPIC_NAME = "users-persistor";
+    public const string DAPR_FUNDSINKS_PERSISTOR_PUBSUB_TOPIC_NAME = "fundsinks-persistor";
+    public const string DAPR_INSTITUTIONS_PERSISTOR_PUBSUB_TOPIC_NAME = "institutions-persistor";
+    public const string DAPR_CAMPAIGNS_PERSISTOR_PUBSUB_TOPIC_NAME = "campaigns-persistor";
+    public const string DAPR_CAMPAIGN_PLEDGES_PERSISTOR_PUBSUB_TOPIC_NAME = "campaign-pledges-persistor";
+    public const string DAPR_CAMPAIGN_DONORS_PERSISTOR_PUBSUB_TOPIC_NAME = "campaign-donors-persistor";
+
+    public const string DAPR_CAMPAIGN_PLEDGES_PROCESSOR_PUBSUB_TOPIC_NAME = "campaign-pledges-processor";
+    public const string DAPR_CAMPAIGN_COMMANDS_PROCESSOR_PUBSUB_TOPIC_NAME = "campaign-commands-processor";
+
+    //WARNING: Used mainly in campaigns microservice Processes controller...need a constant value
     public const string DAPR_PUBSUB_NAME = "pledgemanager-local-pubsub";
 
     // Others
