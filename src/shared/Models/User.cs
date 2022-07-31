@@ -7,12 +7,19 @@ public class User
     public UserVerificationMethods VerificationMethod {get; set;} = UserVerificationMethods.Sms;
     public DateTime? SignupTime { get; set; } = null;
     public DateTime? LastVerificationTime { get; set; } = null;
-    public string InstitutionIdentifier { get; set; } = ""; // TODO: Required if user is organizer
     public string UserName { get; set; } = "";
     public string Name { get; set; } = "";
     public string NickName { get; set; } = "";
     public string Phone { get; set; } = "";
     public string Email { get; set; } = "";
+    public int TotalPledgesCount { get; set; } = 0;
+    public double TotalContribution { get; set; } = 0;
+    public int LastItemsCount { get; set; } = 50;
+ 
+   // More recent Items (based on LastItemsCount)
+    public List<Pledge> Pledges { get; set; } = new List<Pledge>();
+ 
+    public UserPermission Permission {get; set;} = new UserPermission();
 
     // More recent Items (based on LastItemsCount)
     public List<UserVerificationTransaction> Verifications { get; set; } = new List<UserVerificationTransaction>();
@@ -43,10 +50,15 @@ public enum UserVerificationMethods
     Sms
 }
 
+public class UserPermission 
+{
+    public Dictionary<string, string> Institutions = new();
+        
+}
+
 public class UserVerificationResponse 
 {
     public UserTypes Type {get; set; } = UserTypes.Donor;
-    public String InstitutionIdentifier {get; set; } = "";
+    public Dictionary<string, string> Institutions {get; set; } = new();
     public bool Verified {get; set; } = false;
 }
-

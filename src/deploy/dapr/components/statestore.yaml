@@ -21,4 +21,3 @@ auth:
   secretStore: pledgemanager-secrets
 scopes:
   - pledgemanager-local-campaigns
-  - pledgemanager-local-users

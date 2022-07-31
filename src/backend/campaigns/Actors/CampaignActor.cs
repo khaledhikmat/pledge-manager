@@ -20,17 +20,23 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
     // TIMERS
     private const string EXTERNALIZE_TIMER_NAME = "externalize-timer";
     private const int EXTERNALIZE_TIMER_STARTUP = 30;
-    private const int EXTERNALIZE_TIMER_PERIODIC = 10;
+    private const int EXTERNALIZE_TIMER_PERIODIC = 60;
  
-    private DaprClient _daprClient;
+    // TRANSIENT ACTOR STATE
+    private List<Pledge> _transientPledges = new();
+    private List<Donor> _transientDonors = new();
+
+    private DaprClient _daprClient; // Currently not used to persist domain object state
     private SignalRRestService _signalRService;
     private IEnvironmentService _envService;
+    private IPersistenceService _persistenceService;
 
-    public CampaignActor(ActorHost host, DaprClient daprClient, SignalRRestService signalRService, IEnvironmentService envService) : base(host)
+    public CampaignActor(ActorHost host, DaprClient daprClient, SignalRRestService signalRService, IEnvironmentService envService, IPersistenceService persService) : base(host)
     {
         _daprClient = daprClient;
         _signalRService = signalRService; 
         _envService = envService; 
+        _persistenceService = persService;
     }
 
     protected override async Task OnActivateAsync()
@@ -59,6 +65,9 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
         //WARNING: Do not unregister the reminders...otherwise the actor will never update itself
         // await UnregisterReminderAsync(UPDATE_EXG_RATE_REMINDER_NAME);
         // await UnregisterReminderAsync(WATCH_ACTIVE_REMINDER_NAME);
+
+        // Flush the transient items to state
+        await FlushTransientItems();
     }
 
     public async Task<List<FundSinkPeriod>> GetPeriods()
@@ -78,9 +87,6 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
             error = e.Message;
             Logger.LogError($"CampaignActor - GetPeriods - error: {e.Message}");
         } 
-        finally
-        {
-        }
 
         return periods;
     }
@@ -151,7 +157,6 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
         {
             await this.SaveCampaignState(campaign);
             await this.SaveUpdatesState(updates);
-            await _daprClient.SaveStateAsync<Campaign>(_envService.GetStateStoreName(), campaign.Identifier, campaign);
         }
 
         return error;
@@ -390,7 +395,6 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
                         await ProcessDeferredPledges();
                     }
                 }
-
             }
             else
             {
@@ -406,27 +410,14 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
     private async Task ExternalizationTimerCallback(byte[] state)
     {
         Logger.LogInformation($"CampaignActor - ExternalizationTimerCallback [{this.Id.ToString()}] - Entry");
-        // Downstream processes might need to perform additional functions:
-        // 1. State store update
-        // 2. gRPC server (written in Go perhaps)
-        // 3. SignalR Service (although this should be done faster as in: SaveCampaignState)
-        // 4. Redis Streams 
-        // 5. Update Institution Actor which in turn update city, state and country actors
-        // The idea therefore is to enqueue this to a pub/sub or event grid so the update
-        // can be delivered to the different downstream processsors without impacting 
-        // the actor's performance.
 
-        // TODO: for now, let us do it synchronously
-
-        // Save the state to a state store
-        Logger.LogInformation($"CampaignActor - ExternalizationTimerCallback [{this.Id.ToString()}] - Save to state store");
-        var campaign = await GetCampaignState();
-        campaign.LastRefreshTime = DateTime.Now;
-        await this._daprClient.SaveStateAsync<Campaign>(_envService.GetStateStoreName(), campaign.Identifier, campaign);
-
-        // Update the parent institution
         try
         {
+            // Flush the transient items
+            Logger.LogInformation($"CampaignActor - ExternalizationTimerCallback [{this.Id.ToString()}] - Flush transient items");
+            var campaign = await FlushTransientItems();
+
+            // Update the parent institution
             Logger.LogInformation($"CampaignActor - ExternalizationTimerCallback [{this.Id.ToString()}] - Updating institution actor");
 
             var actorId = new ActorId(campaign.InstitutionIdentifier);
@@ -510,7 +501,7 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
                 campaign.Fund += matchPledge.Amount;
                 campaign.MatchFund = 0;
 
-                await this._daprClient.SaveStateAsync<Pledge>(_envService.GetStateStoreName(), matchPledge.Identifier, matchPledge);
+                this._transientPledges.Add(matchPledge);
             }
 
             pledges = pledges.Select(p => {p.PercentageOfTotalFund = campaign.Fund > 0 ? p.Amount / campaign.Fund : 0; return p;}).ToList();
@@ -558,15 +549,15 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
             await this.SaveDonorsState(donors);
 
             Logger.LogInformation($"CampaignActor - RunPostPledgeProcessors [{this.Id.ToString()}] - Saving saving pldge and donor...");
-            //WARNING: Saving to external store right away so we can keep pledges and donors readuly available
+            //WARNING: Saving to external store right away so we can keep pledges and donors readily available
             if (pledge != null)
             {
-                await this._daprClient.SaveStateAsync<Pledge>(_envService.GetStateStoreName(), pledge.Identifier, pledge);
+                this._transientPledges.Add(pledge);
             }
 
             if (donor != null )
             {
-                await this._daprClient.SaveStateAsync<Donor>(_envService.GetStateStoreName(), donor.Identifier, donor);
+                this._transientDonors.Add(donor);
             }
         } 
         catch (Exception e)
@@ -583,12 +574,8 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
         if (!actorState.HasValue) 
         {
             Logger.LogInformation($"CampaignActor - GetCampaignState [{this.Id.ToString()}]");
-            var stateEntry = await _daprClient.GetStateEntryAsync<Campaign>(_envService.GetStateStoreName(), this.Id.ToString());
-            if (stateEntry != null && stateEntry.Value != null)
-            {
-                campaign = stateEntry.Value;
-            }
-            else 
+            campaign = await _persistenceService.RetrieveCampaignById(this.Id.ToString());
+            if (campaign == null)
             {
                 campaign = new Campaign();
                 campaign.Identifier = this.Id.ToString();
@@ -608,10 +595,6 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
     private async Task SaveCampaignState(Campaign campaign) 
     {
         await this.StateManager.SetStateAsync(CAMPAIGN_STATE_NAME, campaign);
-
-        //WARNING: Save to external storage right away...duplicated in externalization
-        campaign.LastRefreshTime = DateTime.Now;
-        await this._daprClient.SaveStateAsync<Campaign>(_envService.GetStateStoreName(), campaign.Identifier, campaign);
 
         //WARNING: Externalize campaign to SignalR to allow for real-time updates
         Logger.LogInformation($"CampaignActor - Externalize campaign [{this.Id.ToString()}] to SignalR for real-time updates....");
@@ -711,6 +694,35 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
     private async Task SaveUpdatesState(List<Campaign> updates) 
     {
         await this.StateManager.SetStateAsync(UPDATES_STATE_NAME, updates);
+    }
+
+    private async Task<Campaign> FlushTransientItems() 
+    {
+        Logger.LogInformation($"CampaignActor - FlushTransientItems [{this.Id.ToString()}]");
+        var campaign = await GetCampaignState();
+        campaign.LastRefreshTime = DateTime.Now;
+        await this._persistenceService.PersistCampaign(campaign);
+
+        foreach (Pledge pledge in this._transientPledges) 
+        {
+            pledge.Campaign = campaign.Name;
+
+            var userActorId = new ActorId(pledge.UserName);
+            var proxy = ActorProxy.Create<IUserActor>(userActorId, nameof(UserActor));
+            await proxy.Pledge(pledge);
+
+            await this._persistenceService.PersistPledge(pledge);
+        }
+
+        foreach (Donor donor in this._transientDonors) 
+        {
+            await this._persistenceService.PersistDonor(donor);
+        }
+
+        this._transientPledges = new();
+        this._transientDonors = new();
+
+        return campaign;
     }
 
     private async Task RegisterReminder(string reminderName, int startUpSecs, int periodicSecs) 

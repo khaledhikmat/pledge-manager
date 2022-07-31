@@ -6,8 +6,6 @@ kubectl apply \
     -f redis.yaml \
     -f campaigns-store.yaml \
     -f campaigns-pubsub.yaml \
-    -f users-store.yaml \
-    -f users-pubsub.yaml \
     -f campaigns.yaml \
     -f users.yaml \
     -f functions.yaml

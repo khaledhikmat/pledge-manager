@@ -25,13 +25,11 @@ The following are proposed microservices hosted in Azure Container Apps:
     - Blazor Web Assesmbly (SPA) Client
     - API Endpoints as Server to handle/circumvent CORS
 - pledgemanager-camapigns:
+    - Users Controller
     - Entities Controller
     - Processors Controller
-    - Campaign Actors 
+    - Campaign and User Actors 
     - 3 Pub/Sub: Campaigns, Commands, Pledges (Redis)
-- pledgemanager-users:
-    - Users Controller
-    - User Actors 
 
 **Please note** that we considered Azure Static Web Apps (SWA) to host the frontend but there were some friction with SignalR. Since our frontend relies heavily on SignalR, we opted to go with a non-SWA site. The net effect is that the frontend (client and API) will scale together in Azure Container Apps as opposed to scaling independently had they been running in SWA.
 
@@ -85,18 +83,10 @@ cd src/backend/campaigns
 bash ./start-selfhosted.sh
 ```
 
-*Using a terminal session, start the backend users*
-
-```
-cd src/backend/users
-bash ./start-selfhosted.sh
-```
-
 *Using a terminal session, start the simulator to seed the database*
 
 ```
 cd src/backend/simulator
-bash ./start-selfhosted-create-only.sh
 bash ./start-selfhosted-simulate-donors.sh
 bash ./start-selfhosted-simulate-pledges-one-campaign.sh
 ```

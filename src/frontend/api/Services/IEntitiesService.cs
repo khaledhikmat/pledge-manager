@@ -13,6 +13,6 @@ namespace pledgemanager.frontend.api.Services
         Task<string> CommandCampaign(string campaignId, CampaignCommand command);
         Task<string> PostPledge(string campaignId, Pledge pledge);
         Task RegisterUser(string username);
-        Task VerifyUser(string username, string code);
+        Task<UserVerificationResponse> VerifyUser(string username, string code);
     }
 }

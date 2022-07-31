@@ -8,6 +8,7 @@ public class Pledge
     public DateTime? RejectedTime { get; set; } = null;
     public DateTime? FulfilledTime { get; set; } = null;
     public string CampaignIdentifier { get; set; } = "";
+    public string Campaign { get; set; } = "";
     public bool IsAnonymous { get; set; } = false;
     public bool IsMatch { get; set; } = false;
     public bool IsDeferred { get; set; } = false;

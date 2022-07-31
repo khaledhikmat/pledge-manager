@@ -5,17 +5,19 @@ namespace pledgemanager.backend.campaigns.Controllers;
 public class ProcessorController : ControllerBase
 {
     private readonly ILogger<ProcessorController> _logger;
+    private readonly IPersistenceService _persistenceService;
 
-    public ProcessorController(ILogger<ProcessorController> logger)
+    public ProcessorController(ILogger<ProcessorController> logger, IPersistenceService persService)
     {
         _logger = logger;
+        _persistenceService = persService;
     }
 
     //WARNING: The PUBSUB name is hard-coded!!!
-    [Topic(Constants.DAPR_PUBSUB_NAME, Constants.DAPR_COMMANDS_PUBSUB_TOPIC_NAME)]
-    [Route("campaigncommands")]
+    [Topic(Constants.DAPR_PUBSUB_NAME, Constants.DAPR_CAMPAIGN_COMMANDS_PROCESSOR_PUBSUB_TOPIC_NAME)]
+    [Route("campaigncommandsprocessor")]
     [HttpPost()]
-    public async Task<ActionResult> IssueCampaignCommandAsync(CampaignCommand command)
+    public async Task<ActionResult> ProcessCampaignCommandsAsync(CampaignCommand command)
     {
         try
         {
@@ -24,7 +26,7 @@ public class ProcessorController : ControllerBase
                 throw new Exception("Command is null!");
             }
 
-            _logger.LogInformation($"IssueCampaignCommandAsync - {command.CampaignIdentifier}/{command.Command}");
+            _logger.LogInformation($"ProcessCampaignCommandsAsync - {command.CampaignIdentifier}/{command.Command}");
 
             var actorId = new ActorId(command.CampaignIdentifier);
             var proxy = ActorProxy.Create<ICampaignActor>(actorId, nameof(CampaignActor));
@@ -33,21 +35,21 @@ public class ProcessorController : ControllerBase
         }
         catch (Exception e)
         {
-            _logger.LogError($"IssueCampaignCommandAsync - {command.CampaignIdentifier}/{command.Command}- Exception: " + e.Message);
-            _logger.LogError($"IssueCampaignCommandAsync - {command.CampaignIdentifier}/{command.Command} - Inner Exception: " + e.InnerException);
+            _logger.LogError($"ProcessCampaignCommandsAsync - {command.CampaignIdentifier}/{command.Command}- Exception: " + e.Message);
+            _logger.LogError($"ProcessCampaignCommandsAsync - {command.CampaignIdentifier}/{command.Command} - Inner Exception: " + e.InnerException);
             return StatusCode(500);
         }
     }
 
     //WARNING: The PUBSUB name is hard-coded!!!
-    [Topic(Constants.DAPR_PUBSUB_NAME, Constants.DAPR_PLEDGES_PUBSUB_TOPIC_NAME)]
-    [Route("pledges")]
+    [Topic(Constants.DAPR_PUBSUB_NAME, Constants.DAPR_CAMPAIGN_PLEDGES_PROCESSOR_PUBSUB_TOPIC_NAME)]
+    [Route("campaignpledgesprocessor")]
     [HttpPost()]
-    public async Task<ActionResult> ProcessPledgeAsync(Pledge pledge)
+    public async Task<ActionResult> ProcessCampaignPledgeAsync(Pledge pledge)
     {
         try
         {
-            _logger.LogInformation($"ProcessPledgeAsync - {pledge.CampaignIdentifier}");
+            _logger.LogInformation($"ProcessCampaignPledgeAsync - {pledge.CampaignIdentifier}");
 
             var actorId = new ActorId(pledge.CampaignIdentifier);
             var proxy = ActorProxy.Create<ICampaignActor>(actorId, nameof(CampaignActor));
@@ -56,8 +58,128 @@ public class ProcessorController : ControllerBase
         }
         catch (Exception e)
         {
-            _logger.LogError($"ProcessPledgeAsync - {pledge.CampaignIdentifier} - Exception: " + e.Message);
-            _logger.LogError($"ProcessPledgeAsync - {pledge.CampaignIdentifier} - Inner Exception: " + e.InnerException);
+            _logger.LogError($"ProcessCampaignPledgeAsync - {pledge.CampaignIdentifier} - Exception: " + e.Message);
+            _logger.LogError($"ProcessCampaignPledgeAsync - {pledge.CampaignIdentifier} - Inner Exception: " + e.InnerException);
+            return StatusCode(500);
+        }
+    }
+
+    //WARNING: The PUBSUB name is hard-coded!!!
+    [Topic(Constants.DAPR_PUBSUB_NAME, Constants.DAPR_USERS_PERSISTOR_PUBSUB_TOPIC_NAME)]
+    [Route("userspersistor")]
+    [HttpPost()]
+    public async Task<ActionResult> PersistUsersAsync(User user)
+    {
+        try
+        {
+            _logger.LogInformation($"PersistUsersAsync - {user.Identifier}");
+            await _persistenceService.SaveUser(user);
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError($"PersistUsersAsync - {user.Identifier} - Exception: " + e.Message);
+            _logger.LogError($"PersistUsersAsync - {user.Identifier} - Inner Exception: " + e.InnerException);
+            return StatusCode(500);
+        }
+    }
+
+    //WARNING: The PUBSUB name is hard-coded!!!
+    [Topic(Constants.DAPR_PUBSUB_NAME, Constants.DAPR_FUNDSINKS_PERSISTOR_PUBSUB_TOPIC_NAME)]
+    [Route("fundsinkspersistor")]
+    [HttpPost()]
+    public async Task<ActionResult> PersistFundSinksAsync(FundSink fundsink)
+    {
+        try
+        {
+            _logger.LogInformation($"PersistFundSinksAsync - {fundsink.Identifier}");
+            await _persistenceService.SaveFundSink(fundsink);
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError($"PersistFundSinksAsync - {fundsink.Identifier} - Exception: " + e.Message);
+            _logger.LogError($"PersistFundSinksAsync - {fundsink.Identifier} - Inner Exception: " + e.InnerException);
+            return StatusCode(500);
+        }
+    }
+
+    //WARNING: The PUBSUB name is hard-coded!!!
+    [Topic(Constants.DAPR_PUBSUB_NAME, Constants.DAPR_INSTITUTIONS_PERSISTOR_PUBSUB_TOPIC_NAME)]
+    [Route("institutionspersistor")]
+    [HttpPost()]
+    public async Task<ActionResult> PersistInstitutionsAsync(Institution institution)
+    {
+        try
+        {
+            _logger.LogInformation($"PersistInstitutionsAsync - {institution.Identifier}");
+            await _persistenceService.SaveInstitution(institution);
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError($"PersistInstitutionsAsync - {institution.Identifier} - Exception: " + e.Message);
+            _logger.LogError($"PersistInstitutionsAsync - {institution.Identifier} - Inner Exception: " + e.InnerException);
+            return StatusCode(500);
+        }
+    }
+
+    //WARNING: The PUBSUB name is hard-coded!!!
+    [Topic(Constants.DAPR_PUBSUB_NAME, Constants.DAPR_CAMPAIGNS_PERSISTOR_PUBSUB_TOPIC_NAME)]
+    [Route("campaignspersistor")]
+    [HttpPost()]
+    public async Task<ActionResult> PersistCampaignsAsync(Campaign campaign)
+    {
+        try
+        {
+            _logger.LogInformation($"PersistCampaignsAsync - {campaign.Identifier}");
+            await _persistenceService.SaveCampaign(campaign);
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError($"PersistCampaignsAsync - {campaign.Identifier} - Exception: " + e.Message);
+            _logger.LogError($"PersistCampaignsAsync - {campaign.Identifier} - Inner Exception: " + e.InnerException);
+            return StatusCode(500);
+        }
+    }
+
+    //WARNING: The PUBSUB name is hard-coded!!!
+    [Topic(Constants.DAPR_PUBSUB_NAME, Constants.DAPR_CAMPAIGN_PLEDGES_PERSISTOR_PUBSUB_TOPIC_NAME)]
+    [Route("campaignpledgespersistor")]
+    [HttpPost()]
+    public async Task<ActionResult> PersistCampaignPledgesAsync(Pledge pledge)
+    {
+        try
+        {
+            _logger.LogInformation($"PersistCampaignPledgesAsync - {pledge.Identifier}");
+            await _persistenceService.SavePledge(pledge);
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError($"PersistCampaignPledgesAsync - {pledge.Identifier} - Exception: " + e.Message);
+            _logger.LogError($"PersistCampaignPledgesAsync - {pledge.Identifier} - Inner Exception: " + e.InnerException);
+            return StatusCode(500);
+        }
+    }
+
+    //WARNING: The PUBSUB name is hard-coded!!!
+    [Topic(Constants.DAPR_PUBSUB_NAME, Constants.DAPR_CAMPAIGN_DONORS_PERSISTOR_PUBSUB_TOPIC_NAME)]
+    [Route("campaigndonorspersistor")]
+    [HttpPost()]
+    public async Task<ActionResult> PersistCampaignDonorsAsync(Donor donor)
+    {
+        try
+        {
+            _logger.LogInformation($"PersistCampaignDonorsAsync - {donor.Identifier}");
+            await _persistenceService.SaveDonor(donor);
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError($"PersistCampaignDonorsAsync - {donor.Identifier} - Exception: " + e.Message);
+            _logger.LogError($"PersistCampaignDonorsAsync - {donor.Identifier} - Inner Exception: " + e.InnerException);
             return StatusCode(500);
         }
     }

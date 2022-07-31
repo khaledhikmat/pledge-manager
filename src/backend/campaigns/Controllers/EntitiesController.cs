@@ -37,12 +37,14 @@ public class EntitiesController : ControllerBase
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<EntitiesController> _logger;
     private readonly IEnvironmentService _envService;
+    private readonly IPersistenceService _persistenceService;
 
-    public EntitiesController(IHttpClientFactory httpClientFactory, ILogger<EntitiesController> logger, IEnvironmentService envService)
+    public EntitiesController(IHttpClientFactory httpClientFactory, ILogger<EntitiesController> logger, IEnvironmentService envService, IPersistenceService persService)
     {
         _httpClientFactory = httpClientFactory;
         _logger = logger;
         _envService = envService;
+        _persistenceService = persService;
     }
 
     //**** CAMPAIGNS
@@ -53,8 +55,7 @@ public class EntitiesController : ControllerBase
         try
         {
             _logger.LogInformation($"GetCampaignById - {id}");
-            var stateEntry = await daprClient.GetStateEntryAsync<Campaign>(_envService.GetStateStoreName(), id);
-            return Ok(stateEntry != null ? stateEntry.Value : null);
+            return Ok(await _persistenceService.RetrieveCampaignById(id));
         }
         catch (Exception e)
         {
@@ -87,92 +88,15 @@ public class EntitiesController : ControllerBase
     [HttpGet()]
     public async Task<ActionResult> GetAllCampaigns([FromServices] DaprClient daprClient)
     {
-        return await QueryCampaigns(new CampaignQuery(), daprClient);
-    }
-
-    [Route("campaignsquery")]
-    [HttpPost]
-    public async Task<ActionResult> QueryCampaigns([FromBody]CampaignQuery query, [FromServices] DaprClient daprClient)
-    {
         try
         {
-            List<Campaign> campaigns = new List<Campaign>();
-            // The options to query in DAPR state store are currently limited:
-            // 1. daprClient.GetBulkStateAsync - requires the actual Ids
-            // 2. https://docs.dapr.io/developing-applications/building-blocks/state-management/howto-state-query-api/
-            //
-            // The first option requires the actual ids to be provided!! The second option, however, is more 
-            // powerful but does not have an SDK equivalent (as far as I can tell)
-            _logger.LogInformation($"QueryCampaigns");
-
-            if (0 == 1)
-            {
-                var httpClient = _httpClientFactory.CreateClient("dapr");
-
-                var queryJson = new StringContent(
-                    JsonSerializer.Serialize(query),
-                    Encoding.UTF8,
-                    Application.Json
-                ); 
-                _logger.LogInformation($"QueryCampaigns query: {JsonSerializer.Serialize(query)}");
-
-                using var httpResponseMessage = await httpClient.PostAsync(
-                    $"/v1.0-alpha1/state/{_envService.GetStateStoreName()}/query?metadata.contentType=application/json", queryJson);
-
-                _logger.LogInformation($"QueryCampaigns response: {httpResponseMessage.ToString()}");
-
-                if (httpResponseMessage.IsSuccessStatusCode)
-                {
-                    using var contentStream = await httpResponseMessage.Content.ReadAsStreamAsync();
-                    campaigns = await JsonSerializer.DeserializeAsync<List<Campaign>>(contentStream);
-                }
-                else 
-                {
-                    throw new Exception($"Status code: {httpResponseMessage.StatusCode} - Reason: {httpResponseMessage.ReasonPhrase}");
-                }
-            }
-            else 
-            {
-                //TODO: Hard-coded for now
-                IReadOnlyList<BulkStateItem> mulitpleStateResult = await daprClient.GetBulkStateAsync(
-                    _envService.GetStateStoreName(), 
-                    new List<string> { 
-                        "CAMP-00001", 
-                        "CAMP-00002", 
-                        "CAMP-00003", 
-                        "CAMP-00004", 
-                        "CAMP-00005", 
-                        "CAMP-00006", 
-                        "CAMP-00007", 
-                        "CAMP-00008", 
-                        "CAMP-00009", 
-                        "CAMP-00010" 
-                    }, 
-                    parallelism: 1);   
-                List<BulkStateItem> items = new List<BulkStateItem>(mulitpleStateResult);
-
-                var serializationOptions = new JsonSerializerOptions();
-                serializationOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-                foreach (BulkStateItem item in items) 
-                {
-                    if (!string.IsNullOrEmpty(item.Value)) 
-                    {
-                        _logger.LogInformation($"Deserializing...{item.Key} - value: {item.Value}");
-                        var o = JsonSerializer.Deserialize<Campaign>(item.Value, serializationOptions);
-                        if (o != null) 
-                        {
-                            campaigns.Add(o);
-                        }
-                    }
-                }
-            }
-
-            return Ok(campaigns);
+            _logger.LogInformation($"GetAllCampaigns");
+            return Ok(await _persistenceService.RetrieveCampaigns());
         }
         catch (Exception e)
         {
-            _logger.LogError($"QueryCampaigns - Exception: " + e.Message);
-            _logger.LogError($"QueryCampaigns - Inner Exception: " + e.InnerException);
+            _logger.LogError($"GetAllCampaigns - Exception: " + e.Message);
+            _logger.LogError($"GetAllCampaigns - Inner Exception: " + e.InnerException);
             return StatusCode(500);
         }
     }
@@ -186,7 +110,7 @@ public class EntitiesController : ControllerBase
             _logger.LogInformation($"CreateCampaignAsync - {campaign.Identifier}");
             campaign.CreatedTime = DateTime.Now;
             campaign.LastUpdatedTime = campaign.CreatedTime;
-            await daprClient.SaveStateAsync<Campaign>(_envService.GetStateStoreName(), campaign.Identifier, campaign);
+            await _persistenceService.PersistCampaign(campaign);
             return Ok();
         }
         catch (Exception e)
@@ -204,8 +128,8 @@ public class EntitiesController : ControllerBase
         try
         {
             _logger.LogInformation($"UpdateCampaignAsync - {id}");
-            var stateEntry = await daprClient.GetStateEntryAsync<Campaign>(_envService.GetStateStoreName(), id);
-            if (stateEntry == null || stateEntry.Value == null)
+            var existingCampaign = await _persistenceService.RetrieveCampaignById(id);
+            if (existingCampaign == null)
             {
                 throw new Exception($"Campaign [{id}] does not exist!!!");
             }
@@ -241,20 +165,17 @@ public class EntitiesController : ControllerBase
                 throw new Exception($"Command username must exist!!!");
             }
 
-            //Validate pledge username using the users microservice
-            //The users microervice might respond with a 401 to indicate non-valid
-            await daprClient.InvokeMethodAsync(_envService.GetUsersAppName(), $"users/verifications/{command.UserName}");    
-
-            var stateEntry = await daprClient.GetStateEntryAsync<Campaign>(_envService.GetStateStoreName(), id);
-            if (stateEntry == null || stateEntry.Value == null)
+            var actorId = new ActorId(command.UserName);
+            var proxy = ActorProxy.Create<IUserActor>(actorId, nameof(UserActor));
+            if (!await proxy.IsVerified()) 
             {
-                throw new Exception($"Campain [{id}] does not exist!!!");
+                throw new Exception($"User is not verified!!!");
             }
 
-            Campaign campaign = stateEntry.Value;
+            var campaign = await _persistenceService.RetrieveCampaignById(id);
             command.CampaignIdentifier = campaign.Identifier;
             _logger.LogInformation($"CommandCampaignAsync - {command.Identifier}");
-            await daprClient.PublishEventAsync(_envService.GetPubSubName(), Constants.DAPR_COMMANDS_PUBSUB_TOPIC_NAME, command);
+            await daprClient.PublishEventAsync(_envService.GetPubSubName(), Constants.DAPR_CAMPAIGN_COMMANDS_PROCESSOR_PUBSUB_TOPIC_NAME, command);
             return Ok(new ConfirmationResponse() {Confirmation = command.Confirmation, Error = ""});
         }
         catch (Exception e)
@@ -282,17 +203,14 @@ public class EntitiesController : ControllerBase
                 throw new Exception($"Pledge userName is null!!!");
             }
 
-            //Validate pledge username using the users microservice
-            //The users microervice might respond with a 401 to indicate non-valid
-            await daprClient.InvokeMethodAsync(_envService.GetUsersAppName(), $"users/verifications/{pledge.UserName}");    
-
-            var stateEntry = await daprClient.GetStateEntryAsync<Campaign>(_envService.GetStateStoreName(), id);
-            if (stateEntry == null || stateEntry.Value == null)
+            var actorId = new ActorId(pledge.UserName);
+            var proxy = ActorProxy.Create<IUserActor>(actorId, nameof(UserActor));
+            if (!await proxy.IsVerified()) 
             {
-                throw new Exception($"Campaign [{id}] does not exist!!!");
+                throw new Exception($"User is not verified!!!");
             }
 
-            Campaign campaign = stateEntry.Value;
+            Campaign campaign = await _persistenceService.RetrieveCampaignById(id);
             if (!campaign.IsActive)
             {
                 throw new Exception($"Campaign [{id}] is not active!!!");
@@ -312,7 +230,7 @@ public class EntitiesController : ControllerBase
 
             pledge.CampaignIdentifier = campaign.Identifier;
             _logger.LogInformation($"SubmitPledgeAsync - {pledge.Identifier}");
-            await daprClient.PublishEventAsync(_envService.GetPubSubName(), Constants.DAPR_PLEDGES_PUBSUB_TOPIC_NAME, pledge);
+            await daprClient.PublishEventAsync(_envService.GetPubSubName(), Constants.DAPR_CAMPAIGN_PLEDGES_PROCESSOR_PUBSUB_TOPIC_NAME, pledge);
             return Ok(new ConfirmationResponse() {Confirmation = pledge.Confirmation, Error = ""});
         }
         catch (Exception e)
@@ -331,8 +249,7 @@ public class EntitiesController : ControllerBase
         try
         {
             _logger.LogInformation($"GetInstitutionById - {id}");
-            var stateEntry = await daprClient.GetStateEntryAsync<Institution>(_envService.GetStateStoreName(), id);
-            return Ok(stateEntry != null ? stateEntry.Value : null);
+            return Ok(await _persistenceService.RetrieveInstitutionById(id));
         }
         catch (Exception e)
         {
@@ -351,7 +268,7 @@ public class EntitiesController : ControllerBase
             _logger.LogInformation($"CreateInstitutionAsync - {institution.Identifier}");
             institution.CreatedTime = DateTime.Now;
             institution.LastUpdatedTime = institution.CreatedTime;
-            await daprClient.SaveStateAsync<Institution>(_envService.GetStateStoreName(), institution.Identifier, institution);
+            await _persistenceService.PersistInstitution(institution);
             return Ok();
         }
         catch (Exception e)
@@ -370,8 +287,7 @@ public class EntitiesController : ControllerBase
         try
         {
             _logger.LogInformation($"GetFundSinkById - {id}");
-            var stateEntry = await daprClient.GetStateEntryAsync<FundSink>(_envService.GetStateStoreName(), id);
-            return Ok(stateEntry != null ? stateEntry.Value : null);
+            return Ok(await _persistenceService.RetrieveFundSinkById(id));
         }
         catch (Exception e)
         {
@@ -390,7 +306,7 @@ public class EntitiesController : ControllerBase
             _logger.LogInformation($"CreateFundSinkAsync - {fundsink.Identifier}");
             fundsink.CreatedTime = DateTime.Now;
             fundsink.LastUpdatedTime = fundsink.CreatedTime;
-            await daprClient.SaveStateAsync<FundSink>(_envService.GetStateStoreName(), fundsink.Identifier, fundsink);
+            await _persistenceService.PersistFundSink(fundsink);
             return Ok();
         }
         catch (Exception e)

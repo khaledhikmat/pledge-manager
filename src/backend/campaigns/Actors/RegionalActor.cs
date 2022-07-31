@@ -9,15 +9,17 @@ public class RegionalActor : Actor, IFundSinkActor
     // TIMERS
     private const string EXTERNALIZE_TIMER_NAME = "externalize-timer";
     private const int EXTERNALIZE_TIMER_STARTUP = 30;
-    private const int EXTERNALIZE_TIMER_PERIODIC = 10;
+    private const int EXTERNALIZE_TIMER_PERIODIC = 60;
 
     private DaprClient _daprClient;
     private IEnvironmentService _envService;
+    private IPersistenceService _persistenceService;
 
-    public RegionalActor(ActorHost host, DaprClient daprClient, IEnvironmentService envService) : base(host)
+    public RegionalActor(ActorHost host, DaprClient daprClient, IEnvironmentService envService, IPersistenceService persService) : base(host)
     {
         _daprClient = daprClient;
         _envService = envService;
+        _persistenceService = persService;
     }
 
     protected override async Task OnActivateAsync()
@@ -80,7 +82,7 @@ public class RegionalActor : Actor, IFundSinkActor
         // Save the state to a state store
         Logger.LogInformation($"RegionalActor - ExternalizationTimerCallback [{this.Id.ToString()}] - Save to state store");
         var region = await GetRegionState();
-        await this._daprClient.SaveStateAsync<FundSink>(_envService.GetStateStoreName(), region.Identifier, region);
+        await _persistenceService.PersistFundSink(region);
     }
 
     private async Task<FundSink> GetRegionState() 
@@ -90,12 +92,9 @@ public class RegionalActor : Actor, IFundSinkActor
         if (!actorState.HasValue) 
         {
             Logger.LogInformation($"RegionalActor - GetRegionState [{this.Id.ToString()}]");
-            var stateEntry = await _daprClient.GetStateEntryAsync<FundSink>(_envService.GetStateStoreName(), this.Id.ToString());
-            if (stateEntry != null && stateEntry.Value != null)
-            {
-                region = stateEntry.Value;
-            }
-            else 
+
+            region = await _persistenceService.RetrieveFundSinkById(this.Id.ToString());
+            if (region == null)
             {
                 region = new FundSink();
                 region.Identifier = this.Id.ToString();

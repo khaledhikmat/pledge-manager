@@ -310,8 +310,16 @@ else
 
             _campaignHubConnection.On<Campaign>("UpdateCampaign", (c) =>
             {
-                _selectedCampaign = c;
-                StateHasChanged();
+                //Ignore the ones that don't belong to me!!!
+                if (c.Identifier == _selectedCampaign.Identifier)
+                {
+                    _selectedCampaign = c;
+                    StateHasChanged();
+                }
+                else 
+                {
+                    Console.WriteLine($"Ignoring Received campaign {c.Identifier}"); 
+                }
             });
 
             await _campaignHubConnection.StartAsync();
