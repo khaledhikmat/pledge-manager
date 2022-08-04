@@ -47,7 +47,7 @@ resource signalr 'Microsoft.SignalRService/signalR@2022-02-01' = {
   sku: {
     name: 'Standard_S1'
     tier: 'Standard'
-    capacity: 2
+    capacity: 100
   }
 }
 
