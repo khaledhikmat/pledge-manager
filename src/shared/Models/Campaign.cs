@@ -2,6 +2,7 @@ namespace pledgemanager.shared.Models;
 
 public class Campaign : FundSink
 {
+    public string CampaignIdentifier { get; set; } = "";
     public string Institution { get; set; } = "";
     public string InstitutionIdentifier { get; set; } = "";
     public string Title { get; set; } = "No-name Title";
@@ -53,16 +54,12 @@ public class Campaign : FundSink
 
 public class CampaignBehavior
 {
-    public string Identifier { get; set; } = Guid.NewGuid().ToString();
-    public string CampaignIdentifier { get; set; } = "";
     public CampaignPledgeModes PledgeMode { get; set; } = CampaignPledgeModes.AutoApproval;
     public double AutoApprovePledgeIfAmountLE { get; set; } = 500; //Only applicable in hybrid mode
     public bool AutoApprovePledgeIfAnonymous { get; set; } = false; //Only applicable in hybrid mode
     public double MinPledgeAmount { get; set; } = 100;
     public double MaxPledgeAmount { get; set; } = 5000;
-    public List<double> RestrictedPledgeAmounts { get; set; } = new List<double>() {
-        100,250,500,1000,2000,5000
-    };
+    public List<double> RestrictedPledgeAmounts { get; set; } = new ();
     public bool AutoDeactivateWhenGoalReached { get; set; } = true; 
     public bool MatchSupported { get; set; } = true; 
     public int EmphasisPledgeDialogStartup {get; set;} = 500;
@@ -104,22 +101,6 @@ public class CampaignCommand
     public bool Arg8 { get; set; } = false;
     public string Confirmation { get; set; } = Guid.NewGuid().ToString();
     public string Error { get; set; } = "";
-}
-
-/*
-This is required to be able to query state as documented:
-https://docs.dapr.io/developing-applications/building-blocks/state-management/howto-state-query-api/
-*/
-public class CampaignQuery 
-{
-    public Dictionary<string, Object> Filter { get; set; } =  new Dictionary<string, Object>();
-    public List<CampaignQuerySortEntry> Sort { get; set; } =  new List<CampaignQuerySortEntry>();
- }
-
-public class CampaignQuerySortEntry 
-{
-    public string Key { get; set; } =  "";
-    public string Order { get; set; } =  "";
 }
 
 

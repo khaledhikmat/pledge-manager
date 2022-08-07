@@ -5,7 +5,7 @@ builder.Services.AddHttpClient("signalr");
 
 // Add services to the container.
 builder.Services.AddSingleton<IEnvironmentService, EnvironmentService>();
-builder.Services.AddSingleton<IPersistenceService, PersistenceService>();
+builder.Services.AddSingleton<IPersistenceService, CosmosPersistenceService>();
 builder.Services.AddSingleton<SignalRAuthService>(sp => 
 {
     var envService = sp.GetService<IEnvironmentService>();

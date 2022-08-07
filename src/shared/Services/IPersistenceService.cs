@@ -4,6 +4,7 @@ using shared.Models;
 
 public interface IPersistenceService 
 {
+    public Task LoadSampleData();
     public Task<User> RetrieveUserById(string id);
     public Task<List<User>> RetrieveUsers();
     public Task<List<User>> RetrieveDonorUsers();

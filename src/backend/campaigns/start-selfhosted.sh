@@ -1,5 +1,6 @@
 export SIGNALR_CONN_STRING="Endpoint=https://my-service.service.signalr.net;"
 export Azure__SignalR__ConnectionString="Endpoint=https://my-service.service.signalr.net;"
+export COSMOS_CONN_STRING="AccountEndpoint=https://pledge-manager-db.documents.azure.com:443/;AccountKey=key;"
 export TARGET_ENV="local"
 export PRODUCT="pledgemanager"
 export STATESTORE_NAME="pledgemanager-local-statestore"

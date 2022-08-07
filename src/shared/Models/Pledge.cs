@@ -1,8 +1,20 @@
+using System.Text.Json.Serialization;
+using Newtonsoft.Json;
+
 namespace pledgemanager.shared.Models;
 
 public class Pledge 
 {
-    public string? Identifier { get; set; } = Guid.NewGuid().ToString();
+    //Cosmos requires an `id`
+    public string id { 
+        get {
+            return Identifier;
+        } 
+        set {
+            Identifier = value;
+        } 
+    }
+    public string Identifier { get; set; } = Guid.NewGuid().ToString();
     public DateTime PledgeTime { get; set; } = DateTime.Now;
     public DateTime? ApprovedTime { get; set; } = null;
     public DateTime? RejectedTime { get; set; } = null;

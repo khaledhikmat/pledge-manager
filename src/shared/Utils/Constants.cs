@@ -6,6 +6,7 @@ public class Constants
     public const string TARGET_ENV = "TARGET_ENV";
     public const string PRODUCT = "PRODUCT";
     public const string SIGNALR_CONN_STRING_ENV_VAR = "SIGNALR_CONN_STRING";
+    public const string COSMOS_CONN_STRING_ENV_VAR = "COSMOS_CONN_STRING";
     public const string ALLOWED_ORIGINS_ENV_VAR = "ALLOWED_ORIGINS";
     public const string DAPR_CAMPAIGNS_APP_NAME_ENV_VAR = "CAMPAIGNS_APP_NAME";
     public const string DAPR_USERS_APP_NAME_ENV_VAR = "USERS_APP_NAME";

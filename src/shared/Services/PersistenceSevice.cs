@@ -21,7 +21,11 @@ public class PersistenceService : IPersistenceService
         _daprClient = daprClient;
         _environmentService = envService;
 
-        LoadSampleData();
+        LoadSampleData2();
+    }
+
+    public async Task LoadSampleData() 
+    {
     }
 
     public Task<User> RetrieveUserById(string id)
@@ -141,7 +145,7 @@ public class PersistenceService : IPersistenceService
         return Task.FromResult<FundSink>(default);
     }
 
-    private void LoadSampleData() 
+    private void LoadSampleData2() 
     {
         _fundSinks = new List<FundSink> {
             new FundSink() {
@@ -293,6 +297,7 @@ public class PersistenceService : IPersistenceService
         _campaigns = new List<Campaign> {
             new Campaign() {
                 Identifier = "CAMP-00001", 
+                CampaignIdentifier = "CAMP-00001", 
                 Type = FundSinkTypes.Campain, 
                 Institution = "ICSA", 
                 InstitutionIdentifier = "INST-00001", 
@@ -306,7 +311,6 @@ public class PersistenceService : IPersistenceService
                 IsActive = true,
                 Goal = 50000,
                 Behavior = new CampaignBehavior() {
-                    CampaignIdentifier = "CAMP-00001",
                     PledgeMode = CampaignPledgeModes.AutoApproval,
                     RestrictedPledgeAmounts = new List<double> {
                     },
@@ -316,6 +320,7 @@ public class PersistenceService : IPersistenceService
             },
             new Campaign() {
                 Identifier = "CAMP-00002", 
+                CampaignIdentifier = "CAMP-00002", 
                 Type = FundSinkTypes.Campain, 
                 Institution = "ICSA", 
                 InstitutionIdentifier = "INST-00001", 
@@ -329,7 +334,6 @@ public class PersistenceService : IPersistenceService
                 IsActive = true,
                 Goal = 20000,
                 Behavior = new CampaignBehavior() {
-                    CampaignIdentifier = "CAMP-00002",
                     PledgeMode = CampaignPledgeModes.ManualApproval,
                     RestrictedPledgeAmounts = new List<double> {
                         100,250,500,1000
@@ -340,6 +344,7 @@ public class PersistenceService : IPersistenceService
             },
             new Campaign() {
                 Identifier = "CAMP-00003", 
+                CampaignIdentifier = "CAMP-00003", 
                 Type = FundSinkTypes.Campain, 
                 Institution = "ICSA", 
                 InstitutionIdentifier = "INST-00001", 
@@ -353,7 +358,6 @@ public class PersistenceService : IPersistenceService
                 IsActive = true,
                 Goal = 30000,
                 Behavior = new CampaignBehavior() {
-                    CampaignIdentifier = "CAMP-00003",
                     PledgeMode = CampaignPledgeModes.HybridApproval,
                     AutoApprovePledgeIfAmountLE = 500,
                     AutoApprovePledgeIfAnonymous = true,
@@ -363,6 +367,7 @@ public class PersistenceService : IPersistenceService
             },
             new Campaign() {
                 Identifier = "CAMP-00004", 
+                CampaignIdentifier = "CAMP-00004", 
                 Type = FundSinkTypes.Campain, 
                 Institution = "MCCC", 
                 InstitutionIdentifier = "INST-00002", 
@@ -376,7 +381,6 @@ public class PersistenceService : IPersistenceService
                 IsActive = true,
                 Goal = 40000,
                 Behavior = new CampaignBehavior() {
-                    CampaignIdentifier = "CAMP-00004",
                     PledgeMode = CampaignPledgeModes.HybridApproval,
                     AutoApprovePledgeIfAmountLE = 500,
                     AutoApprovePledgeIfAnonymous = true,
