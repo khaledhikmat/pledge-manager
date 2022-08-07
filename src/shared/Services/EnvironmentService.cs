@@ -9,6 +9,17 @@ public class EnvironmentService : IEnvironmentService
         return Environment.GetEnvironmentVariable(Constants.TARGET_ENV) ?? "";
     }
 
+    public bool IsDevEnvironment()
+    {
+        if (GetTargetEnvironment().ToLower() == "dev" ||
+            GetTargetEnvironment().ToLower() == "local") 
+        {
+            return true;
+        }
+
+        return false;
+    }
+
     public string GetProduct()
     {
         return Environment.GetEnvironmentVariable(Constants.PRODUCT) ?? "";
@@ -18,6 +29,11 @@ public class EnvironmentService : IEnvironmentService
     public string GetSignalRConnectionString()
     {
         return Environment.GetEnvironmentVariable(Constants.SIGNALR_CONN_STRING_ENV_VAR) ?? "";
+    }
+
+    public string GetCosmosConnectionString()
+    {
+        return Environment.GetEnvironmentVariable(Constants.COSMOS_CONN_STRING_ENV_VAR) ?? "";
     }
 
     public string GetCampaignsAppName()

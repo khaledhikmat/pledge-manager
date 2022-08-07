@@ -548,7 +548,7 @@ public class CampaignActor : Actor, ICampaignActor, IRemindable
             Logger.LogInformation($"CampaignActor - RunPostPledgeProcessors [{this.Id.ToString()}] - Saving campaign donors...");
             await this.SaveDonorsState(donors);
 
-            Logger.LogInformation($"CampaignActor - RunPostPledgeProcessors [{this.Id.ToString()}] - Saving saving pldge and donor...");
+            Logger.LogInformation($"CampaignActor - RunPostPledgeProcessors [{this.Id.ToString()}] - Saving saving pledge and donor...");
             //WARNING: Saving to external store right away so we can keep pledges and donors readily available
             if (pledge != null)
             {

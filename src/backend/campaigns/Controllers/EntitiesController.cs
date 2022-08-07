@@ -47,6 +47,25 @@ public class EntitiesController : ControllerBase
         _persistenceService = persService;
     }
 
+    //**** SAMPLE DATA
+    [Route("sample")]
+    [HttpPost()]
+    public async Task<ActionResult> CreateSampleDataAsync([FromServices] DaprClient daprClient)
+    {
+        try
+        {
+            _logger.LogInformation($"CreateSampleDataAsync");
+            await _persistenceService.LoadSampleData();
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError($"CreateSampleDataAsync - Exception: " + e.Message);
+            _logger.LogError($"CreateSampleDataAsync - Inner Exception: " + e.InnerException);
+            return StatusCode(500);
+        }
+    }
+
     //**** CAMPAIGNS
     [Route("campaigns/{id}")]
     [HttpGet()]
@@ -211,6 +230,7 @@ public class EntitiesController : ControllerBase
             }
 
             Campaign campaign = await _persistenceService.RetrieveCampaignById(id);
+
             if (!campaign.IsActive)
             {
                 throw new Exception($"Campaign [{id}] is not active!!!");

@@ -1,7 +1,19 @@
+using System.Text.Json.Serialization;
+using Newtonsoft.Json;
+
 namespace pledgemanager.shared.Models;
 
 public class Donor 
 {
+    //Cosmos requires an `id`
+    public string id { 
+        get {
+            return Identifier;
+        } 
+        set {
+            Identifier = value;
+        } 
+    }
     public string Identifier { get; set; } = Guid.NewGuid().ToString();
     public string CampaignIdentifier { get; set; } = "";
     public string Name { get; set; } = "";

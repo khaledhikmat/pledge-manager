@@ -8,6 +8,11 @@ public class UserActor : Actor, IUserActor
 
     private const int VERIFICATION_ELAPSED_PERIOD_SECS = 180;
 
+    // TIMERS
+    private const string EXTERNALIZE_TIMER_NAME = "externalize-timer";
+    private const int EXTERNALIZE_TIMER_STARTUP = 30;
+    private const int EXTERNALIZE_TIMER_PERIODIC = 60;
+ 
     private DaprClient _daprClient;
     private IEnvironmentService _envService;
     private IPersistenceService _persistenceService;
@@ -22,11 +27,21 @@ public class UserActor : Actor, IUserActor
     protected override async Task OnActivateAsync()
     {
         Logger.LogInformation($"UserActor - OnActivateAsync [{this.Id.ToString()}] - Entry");
+
+        //Set a timer to externalize actor state to an outside store
+        await RegisterTimerAsync(
+            EXTERNALIZE_TIMER_NAME,
+            nameof(ExternalizationTimerCallback),
+            null,
+            TimeSpan.FromSeconds(EXTERNALIZE_TIMER_STARTUP),  // Externalizion startup in secs
+            TimeSpan.FromSeconds(EXTERNALIZE_TIMER_PERIODIC)  // Externalizion period in secs
+        );
     }
 
     protected override async Task OnDeactivateAsync()
     {
         Logger.LogInformation($"UserActor - OnDeactivateAsync [{this.Id.ToString()}] - Entry");
+        await UnregisterTimerAsync(EXTERNALIZE_TIMER_NAME);
     }
 
     public async Task Update(User usr)
@@ -43,8 +58,8 @@ public class UserActor : Actor, IUserActor
 
         Logger.LogInformation($"UserActor - IsVerified [{this.Id.ToString()}]");
         var xaction = xactions.
-            Take(1). // Limit to the last one only
             OrderByDescending(x => x.VerificationResponseTime).
+            Take(1). // Limit to the last one only
             Where(x => x.VerificationAllowedTime > DateTime.Now && x.Verified == true). 
             FirstOrDefault();
         if (xaction != null)
@@ -92,14 +107,15 @@ public class UserActor : Actor, IUserActor
 
         Logger.LogInformation($"UserActor - ValidateVerification [{this.Id.ToString()}]");
         var xaction = xactions.
+            OrderByDescending(x => x.VerificationRequestTime).
             Take(1). // Limit to the last one only
-            OrderByDescending(x => x.VerificationResponseTime).
             Where(x => x.Code == code).
             FirstOrDefault();
         if (xaction != null)
         {
             xaction.VerificationResponseTime = DateTime.Now;
             var elapsedSeconds = (DateTime.Now - xaction.VerificationRequestTime).TotalSeconds;
+            Logger.LogInformation($"UserActor - ValidateVerification {xaction.Identifier}");
             Logger.LogInformation($"UserActor - ValidateVerification [{this.Id.ToString()}] - elpased seconds: {elapsedSeconds}");
             if (elapsedSeconds <= VERIFICATION_ELAPSED_PERIOD_SECS)
             {
@@ -141,6 +157,21 @@ public class UserActor : Actor, IUserActor
         catch (Exception e)
         {
             Logger.LogError($"UserActor - Processing pledge - error: {e.Message}");
+        }
+    }
+
+    private async Task ExternalizationTimerCallback(byte[] state)
+    {
+        Logger.LogInformation($"UserActor - ExternalizationTimerCallback [{this.Id.ToString()}] - Entry");
+
+        try
+        {
+            var user = await this.GetUserState();
+            await this._persistenceService.PersistUser(user);
+        }
+        catch (Exception e)
+        {
+            Logger.LogError($"UserActor - ExternalizationTimerCallback [{this.Id.ToString()}] - Updating user failure: {e.Message}");
         }
     }
 

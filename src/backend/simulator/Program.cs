@@ -44,12 +44,11 @@ try
                 url = $"{envService.GetBaseUrl("CAMPAIGNS")}/users/verifications/{donor.UserName}"; 
                 Console.WriteLine($"Simulating users URL: {url}");
                 await Utilities.PostNoRequestNoResponse(httpClient, url);
-                //await daprClient.InvokeMethodAsync(envService.GetUsersAppName(), $"users/verifications/{donor.UserName}");    
+
                 // Respond with code (for now temp)
                 url = $"{envService.GetBaseUrl("CAMPAIGNS")}/users/verifications/{donor.UserName}/{code}"; 
                 Console.WriteLine($"Simulating users verification URL: {url}");
                 await Utilities.PostNoRequestNoResponse(httpClient, url);
-                //await daprClient.InvokeMethodAsync(envService.GetUsersAppName(), $"users/verifications/{donor.UserName}/{code}");    
             }
             catch (Exception e)
             {
@@ -103,7 +102,6 @@ try
                 pledge.Currency = "USD";
                 pledge.UserName = donors[Random.Shared.Next(donors.Count)].UserName;
                 await Utilities.PostNoResponse<Pledge>(httpClient, url, pledge);    
-                //await daprClient.InvokeMethodAsync<Pledge>(envService.GetCampaignsAppName(), $"entities/campaigns/{campaign.Identifier}/pledges", pledge);    
             }
             catch (Exception e) 
             {
