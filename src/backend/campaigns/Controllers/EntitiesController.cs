@@ -47,6 +47,24 @@ public class EntitiesController : ControllerBase
         _persistenceService = persService;
     }
 
+    //**** PING
+    [Route("ping")]
+    [HttpGet()]
+    public async Task<ActionResult> Ping([FromServices] DaprClient daprClient)
+    {
+        try
+        {
+            _logger.LogInformation($"Ping");
+            return Ok("I am up!");
+        }
+        catch (Exception e)
+        {
+            _logger.LogError($"Ping - Exception: " + e.Message);
+            _logger.LogError($"Ping - Inner Exception: " + e.InnerException);
+            return StatusCode(500);
+        }
+    }
+
     //**** SAMPLE DATA
     [Route("sample")]
     [HttpPost()]
