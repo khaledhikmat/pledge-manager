@@ -240,12 +240,14 @@ public class EntitiesController : ControllerBase
                 throw new Exception($"Pledge userName is null!!!");
             }
 
+            _logger.LogInformation($"SubmitPledgeAsync2 - {id}");
             var actorId = new ActorId(pledge.UserName);
             var proxy = ActorProxy.Create<IUserActor>(actorId, nameof(UserActor));
             if (!await proxy.IsVerified()) 
             {
                 throw new Exception($"User is not verified!!!");
             }
+            _logger.LogInformation($"SubmitPledgeAsync3 - {id}");
 
             Campaign campaign = await _persistenceService.RetrieveCampaignById(id);
 
