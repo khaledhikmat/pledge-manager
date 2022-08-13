@@ -1,4 +1,5 @@
 @inject HttpClient _httpClient
+@inject TokenAuthenticationStateProvider _tokenAuthStateProvider
 
 <h3>Donor Pledge</h3>
 
@@ -53,12 +54,16 @@
 
     private Campaign _selectedCampaign = new Campaign();
     private Pledge _formPledge = new Pledge();
+    private string _userName = "";
 
     [Parameter] public string Id { get; set; } = default!;
     protected override async Task OnInitializedAsync()
     {
         try
         {
+            var authstate = await _tokenAuthStateProvider.GetAuthenticationStateAsync();
+            var user = authstate.User;
+            _userName = (user != null && user.Identity != null) ? user.Identity.Name : "Unkown";
             _selectedCampaign = await _httpClient.GetFromJsonAsync<Campaign>($"function/campaigns/{Id}") ?? new Campaign();
         }
         catch (HttpRequestException ex)
@@ -74,7 +79,7 @@
             _showSuccess = false;
 
             _formPledge.CampaignIdentifier = _selectedCampaign.Identifier;
-            _formPledge.UserName = "2105551207"; //TODO:
+            _formPledge.UserName = _userName;
             _formPledge.Name = _formPledge.IsAnonymous ? "Anonymous" : _formPledge.Name;
             var response = await _httpClient.PostAsJsonAsync<Pledge>($"function/campaigns/{_selectedCampaign.Identifier}/pledges", _formPledge);
             if (!response.IsSuccessStatusCode) 

@@ -239,14 +239,16 @@ public class CosmosPersistenceService : IPersistenceService
                         Start = DateTime.Now.AddDays(-10),
                         Stop = DateTime.Now.AddDays(10),
                         IsActive = true,
-                        Goal = 20000,
+                        Goal = 30000,
                         Behavior = new CampaignBehavior() {
                             PledgeMode = CampaignPledgeModes.ManualApproval,
                             RestrictedPledgeAmounts = new List<double> {
-                                100,250,500,1000
+                                100,200,500,1000,2000,5000,10000,25000
                             },
-                            AutoDeactivateWhenGoalReached = false,
-                            MatchSupported = false
+                            AutoDeactivateWhenGoalReached = true,
+                            MatchSupported = false,
+                            MinPledgeAmount = 50,
+                            MaxPledgeAmount = 30000
                         }
                     },
                     new Campaign() {

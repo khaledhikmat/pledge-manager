@@ -1,6 +1,7 @@
 @using System.Globalization
 @inject HttpClient _httpClient
 @inject DialogService _dialogService
+@inject TokenAuthenticationStateProvider _tokenAuthStateProvider
 
 <RadzenCard>
     <div class="row">
@@ -27,7 +28,7 @@
             </div>
             <div class="@ColumnSize">
                 <div>
-                    @if (Pledge.CanShowEmphasize()) {<span class="mr-2"><button class="btn btn-warning w-100" @onclick="(() => EmphasizePledge())">PROJECT</button></span>} else {<span></span>}
+                    @if (Pledge.CanShowEmphasize()) {<span class="mr-2"><button class="btn btn-warning w-100" @onclick="(() => EmphasizePledge())">SHOW</button></span>} else {<span></span>}
                 </div>
             </div>
         }
@@ -46,11 +47,20 @@
 
     private string _commandConfirmation = "";
 
+    private string _userName = "";
+
     public string ColumnSize 
     {
         get {
             return IsCommands ? "col-md-2" : "col-md-4";
         }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authstate = await _tokenAuthStateProvider.GetAuthenticationStateAsync();
+        var user = authstate.User;
+        _userName = (user != null && user.Identity != null) ? user.Identity.Name : "Unkown";
     }
 
     private async Task ApprovePledge()
@@ -60,7 +70,7 @@
             this._commandConfirmation = "";
             var command = new CampaignCommand();
             command.CampaignIdentifier = Campaign.Identifier;
-            command.UserName = "2105551207"; //TODO: Organizer
+            command.UserName = _userName;
             command.Command = CampaignCommand.APPROVE_PLEDGE;
             command.Arg1 = Pledge.Identifier;
 
@@ -85,7 +95,7 @@
             this._commandConfirmation = "";
             var command = new CampaignCommand();
             command.CampaignIdentifier = Campaign.Identifier;
-            command.UserName = "2105551207"; //TODO: Organizer
+            command.UserName = _userName;
             command.Command = CampaignCommand.REJECT_PLEDGE;
             command.Arg1 = Pledge.Identifier;
 
