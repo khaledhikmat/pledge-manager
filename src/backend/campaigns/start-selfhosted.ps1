@@ -1,3 +1,10 @@
+param (
+    [String]
+    $baseUrl = 'http://localhost:6000',
+    [String]
+    $scriptPath = 'C:/Users/khaled/source/repos'
+)
+
 # Assumes u have:
 # Install-Module -Name Az
 # Install-Module Az.Accounts
@@ -17,7 +24,7 @@ $Env:PUBSUB_NAME="pledgemanager-local-pubsub"
 
 ../../scripts/delete-cosmos-db.ps1
 ../../scripts/empty-redis-cache.ps1
-../../scripts/ping.ps1
+../../scripts/ping.ps1 -baseUrl $baseUrl -scriptPath $scriptPath
 
 dapr run `
     --app-id pledgemanager-local-campaigns `
