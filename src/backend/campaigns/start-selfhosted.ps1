@@ -2,7 +2,7 @@ param (
     [String]
     $baseUrl = 'http://localhost:6000',
     [String]
-    $scriptPath = 'C:/Users/khaled/source/repos'
+    $scriptPath = '/Users/khaled/github'
 )
 
 # Assumes u have:
